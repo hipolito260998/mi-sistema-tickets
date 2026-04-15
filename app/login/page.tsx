@@ -1,5 +1,6 @@
 "use client";
 
+import { authService } from "@/services/authService";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -8,13 +9,14 @@ export default function Login() {
   const supabase = createClient();
   const router = useRouter();
 
+  // Estados del Formulario
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [mensaje, setMensaje] = useState("");
   const [esRegistro, setEsRegistro] = useState(false);
 
-  // Variable de control para evitar fugas de memoria
+  // Control de montaje para evitar errores de memoria
   const [isMounted, setIsMounted] = useState(true);
 
   useEffect(() => {
@@ -28,53 +30,40 @@ export default function Login() {
 
     try {
       if (esRegistro) {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-        });
+        // Registro usando el servicio SOLID
+        await authService.signUp(supabase, email, password);
 
-        if (!isMounted) return;
-
-        if (error) {
-          setMensaje(`❌ Error: ${error.message}`);
-        } else {
+        if (isMounted) {
           setMensaje("✅ Cuenta creada con éxito. Ahora inicia sesión.");
           setEsRegistro(false);
           setPassword("");
         }
       } else {
-        const { data: authData, error: authError } =
-          await supabase.auth.signInWithPassword({
-            email,
-            password,
-          });
+        // Login usando el servicio (ahora nos devuelve el rol directamente)
+        const { role } = await authService.signIn(supabase, email, password);
 
         if (!isMounted) return;
 
-        if (authError) {
-          setMensaje(`❌ Error: Credenciales incorrectas.`);
-        } else if (authData.user) {
-          // Consultamos el rol en la tabla de perfiles
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("role")
-            .eq("id", authData.user.id)
-            .single();
+        router.refresh();
 
-          if (!isMounted) return;
-
-          router.refresh();
-
-          // Redirección basada en rol
-          if (profile?.role === "ADMIN") {
-            router.push("/dashboard");
-          } else {
-            router.push("/");
-          }
+        // Redirección basada en el rol que devolvió el servicio
+        if (role === "ADMIN") {
+          router.push("/dashboard");
+        } else {
+          router.push("/");
         }
       }
     } catch (err) {
-      if (isMounted) setMensaje("❌ Ocurrió un error inesperado.");
+      // TypeScript lo tratará como 'unknown' por defecto
+      if (isMounted) {
+        // Verificamos si 'err' es realmente un objeto Error para obtener el .message
+        const errorMsg =
+          err instanceof Error ? err.message : "Error inesperado";
+
+        setMensaje(
+          `❌ ${errorMsg.includes("invalid") ? "Credenciales incorrectas" : errorMsg}`,
+        );
+      }
     } finally {
       if (isMounted) setLoading(false);
     }
@@ -82,7 +71,7 @@ export default function Login() {
 
   return (
     <main className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="bg-white p-8 rounded-xl shadow-lg max-w-sm w-full text-gray-800">
+      <div className="bg-white p-8 rounded-xl shadow-lg max-w-sm w-full text-gray-800 border border-gray-100">
         <h1 className="text-2xl font-bold mb-6 text-center text-gray-900">
           {esRegistro ? "Crear Cuenta" : "Iniciar Sesión"}
         </h1>
