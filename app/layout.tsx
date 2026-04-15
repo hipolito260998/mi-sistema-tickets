@@ -1,0 +1,45 @@
+import Navbar from "@/app/components/Navbar";
+import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import "./globals.css";
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+  display: 'swap', // Ayuda con la carga visual
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+  display: 'swap',
+});
+
+export const metadata: Metadata = {
+  title: "IT HelpDesk | Soporte Técnico",
+  description: "Sistema de gestión de tickets de soporte TI",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html
+      lang="es" // Cambiado a español
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+    >
+      {/* Agregamos geistSans.className al body. 
+          Esto hace que toda la app use la fuente Geist por defecto
+          y desaparezca el warning de "preload but not used".
+      */}
+      <body className={`${geistSans.className} min-h-full flex flex-col bg-gray-50 text-gray-900`}>
+        <Navbar />
+        <main className="grow">
+          {children}
+        </main>
+      </body>
+    </html>
+  );
+}
