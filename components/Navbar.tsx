@@ -61,7 +61,7 @@ export default function Navbar() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     // No hace falta router.refresh() si onAuthStateChange ya limpia el estado
-    router.push("/login");
+    window.location.href = "/login";
   };
 
   if (pathname === "/login") return null;
@@ -77,19 +77,6 @@ export default function Navbar() {
             <span className="bg-blue-600 text-white p-1 rounded">IT</span>{" "}
             HelpDesk
           </Link>
-
-          <div className="hidden md:flex gap-4 text-sm font-medium text-gray-600">
-            {role === "ADMIN" && (
-              <Link
-                href="/dashboard"
-                className={`hover:text-blue-600 font-medium transition-colors ${
-                  pathname === "/dashboard" ? "text-blue-600" : "text-gray-600"
-                }`}
-              >
-                Dashboard General
-              </Link>
-            )}
-          </div>
         </div>
 
         <div className="flex items-center gap-4">

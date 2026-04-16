@@ -46,12 +46,11 @@ export default function Login() {
 
         router.refresh();
 
-        // Redirección basada en el rol que devolvió el servicio
-        if (role === "ADMIN") {
-          router.push("/dashboard");
-        } else {
-          router.push("/");
-        }
+        const destino = role === "ADMIN" ? "/dashboard" : "/";
+
+        setTimeout(() => {
+          router.push(destino);
+        }, 100);
       }
     } catch (err) {
       // TypeScript lo tratará como 'unknown' por defecto
@@ -63,10 +62,9 @@ export default function Login() {
         setMensaje(
           `❌ ${errorMsg.includes("invalid") ? "Credenciales incorrectas" : errorMsg}`,
         );
+        setLoading(false)
       }
-    } finally {
-      if (isMounted) setLoading(false);
-    }
+    } 
   };
 
   return (
