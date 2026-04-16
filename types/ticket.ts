@@ -22,3 +22,7 @@ export interface CreateTicketInput {
   priority: string;
   customer_id: string;
 }
+
+
+// types/ticket.ts o arriba en tu hook
+export type TicketStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED";

@@ -1,5 +1,7 @@
+"use client";
+
 import { ticketService } from '@/services/ticketService';
-import { Ticket } from '@/types/ticket';
+import { Ticket, TicketStatus } from '@/types/ticket'; // Importa tus tipos
 import { SupabaseClient } from '@supabase/supabase-js';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -7,44 +9,69 @@ export function useTickets(supabase: SupabaseClient, userId?: string) {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchTickets = useCallback(async () => {
+  // --- NOTIFICACIONES ---
+  // Tipamos el parámetro como un objeto que tiene al menos lo que necesitamos
+  const enviarNotificacionNativa = (nuevoTicket: Partial<Ticket>) => {
+    if (Notification.permission === "granted") {
+      new Notification("🎫 Nuevo Ticket", {
+        body: `${nuevoTicket.title || 'Sin título'}`,
+
+      });
+    }
+  };
+
+ const fetchTickets = useCallback(async () => {
     try {
       const data = await ticketService.getAllTickets(supabase);
       const baseData = data || [];
-      // Si hay userId filtramos (Portal), si no, mostramos todo (Admin)
       const filtrados = userId 
         ? baseData.filter(t => t.customer_id === userId) 
         : baseData;
 
       setTickets(filtrados);
+
+      // --- LÓGICA DE TÍTULO CONDICIONAL ---
+      // Solo mostramos el contador (X) si NO hay userId (es Admin)
+      // O si quieres que el cliente vea SUS propios pendientes, usa 'filtrados'
+      if (!userId) { 
+        const pendientesAdmin = filtrados.filter(t => t.status === "OPEN").length;
+        document.title = pendientesAdmin > 0 ? `(${pendientesAdmin}) Panel Admin` : "IT HelpDesk";
+      } else {
+        // Para el cliente, mantenemos el título limpio o personalizado
+        document.title = "Mi Soporte - IT HelpDesk";
+      }
+
     } catch (err) {
-      console.error("Error en useTickets:", err);
+      console.error("Error en fetchTickets:", err);
     } finally {
       setLoading(false);
     }
   }, [supabase, userId]);
 
-  const updateStatus = async (id: string, newStatus: string) => {
-    try {
-      await ticketService.updateTicketStatus(supabase, id, newStatus);
-      // Actualización optimista para feedback instantáneo
-      setTickets(prev => 
-        prev.map(t => t.id === id ? { ...t, status: newStatus as any } : t)
-      );
-    } catch (err) {
-      console.error("Error al actualizar estado:", err);
-      alert("No se pudo actualizar el estado.");
-    }
-  };
-
   useEffect(() => {
+    if (typeof window !== "undefined" && Notification.permission !== "granted") {
+      Notification.requestPermission();
+    }
+
     let isMounted = true;
     fetchTickets();
 
     const canal = supabase
       .channel("realtime-tickets")
-      .on("postgres_changes", 
-        { event: "*", schema: "public", table: "tickets" }, 
+      .on(
+        "postgres_changes", 
+        { event: "INSERT", schema: "public", table: "tickets" }, 
+        (payload) => { 
+          if (isMounted) {
+            // payload.new ya viene tipado por Supabase como el objeto insertado
+            enviarNotificacionNativa(payload.new as Ticket);
+            fetchTickets(); 
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "tickets" },
         () => { if (isMounted) fetchTickets(); }
       )
       .subscribe();
@@ -55,5 +82,32 @@ export function useTickets(supabase: SupabaseClient, userId?: string) {
     };
   }, [fetchTickets, supabase]);
 
-  return { tickets, loading, updateStatus, refresh: fetchTickets };
+  const updateStatus = async (id: string, newStatus: string) => {
+    try {
+      await ticketService.updateTicketStatus(supabase, id, newStatus);
+      
+      setTickets(prev => 
+        prev.map(t => t.id === id 
+          ? { ...t, status: newStatus as TicketStatus } // <-- Convertimos string a TicketStatus
+          : t
+        )
+      );
+    } catch (err) {
+      console.error("Error al actualizar:", err);
+    }
+  };
+
+  const borrarTicket = async (id: string) => {
+    try {
+      // 1. Lo borramos de la base de datos
+      await ticketService.deleteTicket(supabase, id);
+      
+      // 2. Lo quitamos de la pantalla instantáneamente
+      setTickets((prev) => prev.filter((ticket) => ticket.id !== id));
+    } catch (error) {
+      console.error("Error al eliminar el ticket:", error);
+    }
+  };
+
+  return { tickets, loading, updateStatus, refresh: fetchTickets,borrarTicket };
 }

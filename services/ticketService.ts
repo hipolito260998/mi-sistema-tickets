@@ -29,5 +29,14 @@ export const ticketService = {
 
     if (error) throw error;
     return data as Ticket;
+  },
+
+  deleteTicket: async (supabase: SupabaseClient, id: string) => {
+    const { error } = await supabase
+      .from('tickets')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
   }
 };

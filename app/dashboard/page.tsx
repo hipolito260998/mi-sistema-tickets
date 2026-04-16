@@ -2,13 +2,14 @@
 
 import { DashboardFilters } from "@/components/DashboardFilters";
 import { TicketTable } from "@/components/TicketTable";
+import { Badge } from "@/components/ui/badge";
 import { useTickets } from "@/hooks/useTickets";
 import { createClient } from "@/utils/supabase/client";
 import { useState } from "react";
 
 export default function DashboardAgente() {
   const supabase = createClient();
-  const { tickets, loading, updateStatus } = useTickets(supabase);
+  const { tickets, loading, updateStatus,borrarTicket } = useTickets(supabase);
   const [filtroPrioridad, setFiltroPrioridad] = useState("TODOS");
   const [actualizandoId, setActualizandoId] = useState<string | null>(null);
 
@@ -24,31 +25,60 @@ export default function DashboardAgente() {
 
   const totalPendientes = tickets.filter((t) => t.status === "OPEN").length;
 
-  if (loading) return <p className="text-center p-20 text-gray-400">Sincronizando...</p>;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-2">
+          <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-slate-500 font-bold text-sm">Sincronizando tickets...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <main className="min-h-screen bg-gray-100 p-8">
-      <div className="max-w-6xl mx-auto">
-        <header className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-800">Panel de Control</h1>
+    // 1. h-[calc(100vh-80px)] hace que la vista no sea más grande que tu monitor (80px es un aprox de tu Navbar)
+    // 2. overflow-hidden bloquea el scroll de la ventana entera
+    <main className="h-[calc(100vh-80px)] overflow-hidden bg-slate-50/50 p-4 md:p-8 flex flex-col">
+      <div className="max-w-6xl mx-auto w-full h-full flex flex-col">
+        
+        {/* ENCABEZADO: flex-shrink-0 evita que se aplaste */}
+        <header className="flex-shrink-0 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+          <div>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">
+              Panel de Control
+            </h1>
+            <p className="text-slate-500 text-sm font-medium">
+              Gestión centralizada de incidentes técnicos.
+            </p>
+          </div>
+
           {totalPendientes > 0 && (
-            <span className="bg-red-500 text-white px-4 py-1 rounded-full text-sm font-bold animate-pulse">
-              {totalPendientes} pendientes
-            </span>
+            <Badge className="bg-red-500 hover:bg-red-600 text-white px-4 py-1.5 rounded-full shadow-lg shadow-red-200 animate-pulse border-none text-sm">
+              {totalPendientes} tickets por atender
+            </Badge>
           )}
         </header>
 
-        <DashboardFilters 
-          filtroActual={filtroPrioridad} 
-          onFilterChange={setFiltroPrioridad} 
-        />
+        {/* FILTROS: flex-shrink-0 evita que se aplasten. Ya no necesitan sticky. */}
+        <section className="flex-shrink-0 mb-4">
+          <DashboardFilters 
+            filtroActual={filtroPrioridad} 
+            onFilterChange={setFiltroPrioridad} 
+          />
+        </section>
 
-        <TicketTable 
-          tickets={ticketsFiltrados}
-          actualizandoId={actualizandoId}
-          onStatusChange={handleStatusChange}
-          filtroPrioridad={filtroPrioridad}
-        />
+        {/* CONTENEDOR TABLA: flex-1 le dice "ocupa todo el espacio que sobra hacia abajo" */}
+        <section className="flex-1 overflow-hidden rounded-2xl shadow-xl border border-gray-200">
+          <TicketTable 
+            tickets={ticketsFiltrados}
+            actualizandoId={actualizandoId}
+            onStatusChange={handleStatusChange}
+            filtroPrioridad={filtroPrioridad}
+            onDelete={borrarTicket}
+          />
+        </section>
+        
       </div>
     </main>
   );

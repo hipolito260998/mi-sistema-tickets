@@ -1,66 +1,123 @@
 "use client";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 
-interface Props {
+interface TicketFormProps {
   onSubmit: (data: { title: string; description: string; priority: string }) => Promise<void>;
 }
 
-export const TicketForm = ({ onSubmit }: Props) => {
+export const TicketForm = ({ onSubmit }: TicketFormProps) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState("MEDIUM");
-  const [enviando, setEnviando] = useState(false);
+  const [loadingAction, setLoadingAction] = useState(false);
+  const [enviadoExitoso, setEnviadoExitoso] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setEnviando(true);
-    await onSubmit({ title, description, priority });
-    setTitle("");
-    setDescription("");
-    setEnviando(false);
+    setLoadingAction(true);
+    
+    try {
+      await onSubmit({ title, description, priority });
+      setEnviadoExitoso(true);
+      setTitle("");
+      setDescription("");
+      setPriority("MEDIUM");
+      setTimeout(() => setEnviadoExitoso(false), 3000);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoadingAction(false);
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white p-6 rounded-2xl shadow-lg border border-gray-200 space-y-4">
-      <h2 className="text-xl font-bold text-gray-800 mb-4">Crear Nuevo Ticket</h2>
-      
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Asunto</label>
-        <input 
-          required value={title} onChange={(e) => setTitle(e.target.value)}
-          className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-          placeholder="Ej: Mi monitor no enciende"
-        />
-      </div>
+      <Card className="shadow-xl border-slate-200 overflow-hidden w-full">
+        {/* Barra de estado superior decorativa */}
+        <div className={`h-1.5 w-full transition-colors duration-500 ${enviadoExitoso ? 'bg-green-500' : 'bg-blue-600'}`} />
+        
+        <CardHeader className="pb-4">
+          <CardTitle className="text-xl font-black text-slate-800 tracking-tight">
+            Nuevo Reporte
+          </CardTitle>
+          <p className="text-[11px] text-slate-400 font-medium leading-none">
+            Describe tu problema técnico para ayudarte.
+          </p>
+        </CardHeader>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
-        <textarea 
-          required value={description} onChange={(e) => setDescription(e.target.value)}
-          className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none h-24"
-          placeholder="Cuéntanos más detalles..."
-        />
-      </div>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-1.5">
+              <Label className="text-[10px] uppercase font-black text-slate-400 tracking-widest">
+                Asunto
+              </Label>
+              <Input 
+                required 
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="¿Qué sucede?"
+                className="rounded-xl border-slate-200 focus-visible:ring-blue-600"
+              />
+            </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Prioridad</label>
-        <select 
-          value={priority} onChange={(e) => setPriority(e.target.value)}
-          className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-bold"
-        >
-          <option value="LOW">Baja</option>
-          <option value="MEDIUM">Media</option>
-          <option value="HIGH">Alta</option>
-          <option value="URGENT">Urgente</option>
-        </select>
-      </div>
+            <div className="space-y-1.5">
+              <Label className="text-[10px] uppercase font-black text-slate-400 tracking-widest">
+                Prioridad
+              </Label>
+              <Select value={priority} onValueChange={setPriority}>
+                <SelectTrigger className="rounded-xl border-slate-200 font-bold text-slate-700">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="LOW" className="text-green-600 font-medium">Baja</SelectItem>
+                  <SelectItem value="MEDIUM" className="text-blue-600 font-medium">Media</SelectItem>
+                  <SelectItem value="HIGH" className="text-orange-600 font-medium">Alta</SelectItem>
+                  <SelectItem value="URGENT" className="text-red-600 font-bold">Urgente</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-      <button 
-        type="submit" disabled={enviando}
-        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-all disabled:opacity-50"
-      >
-        {enviando ? "Enviando..." : "Enviar Ticket"}
-      </button>
-    </form>
+            <div className="space-y-1.5">
+              <Label className="text-[10px] uppercase font-black text-slate-400 tracking-widest">
+                Descripción
+              </Label>
+              <Textarea 
+                required 
+                rows={4} 
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Describe el problema..."
+                className="rounded-xl border-slate-200 resize-none focus-visible:ring-blue-600"
+              />
+            </div>
+
+            <Button
+              disabled={loadingAction}
+              className={`w-full font-bold py-6 rounded-xl transition-all duration-500 shadow-lg ${
+                enviadoExitoso 
+                  ? "bg-green-500 hover:bg-green-600 scale-[1.02] shadow-green-100" 
+                  : "bg-blue-600 hover:bg-blue-700 shadow-blue-100"
+              } text-white`}
+            >
+              {loadingAction ? (
+                <span className="flex items-center gap-2">
+                  <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Procesando...
+                </span>
+              ) : enviadoExitoso ? (
+                "¡Ticket Enviado! ✅"
+              ) : (
+                "Enviar Ticket"
+              )}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
   );
 };
