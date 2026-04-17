@@ -31,56 +31,40 @@ export async function proxy(request: NextRequest) {
         }
     )
 
-    // 1. Obtener el usuario autenticado
-    let user = null;
-    try {
-        const { data: { user: authUser } } = await supabase.auth.getUser()
-        user = authUser;
-    } catch (error) {
-        // Si hay error al obtener el usuario, no lo rechazamos automáticamente
-        // Podría ser un error temporal de conexión
-        console.error('Error verificando autenticación:', error);
-    }
-
-    // --- CASO A: USUARIO NO AUTENTICADO ---
-    if (!user) {
-        if (request.nextUrl.pathname !== '/login') {
-            return NextResponse.redirect(new URL('/login', request.url))
-        }
-        return response;
-    }
-
-    // --- CASO B: USUARIO AUTENTICADO ---
-    let role = null;
-    try {
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', user.id)
-            .single();
-        role = profile?.role;
-    } catch (error) {
-        // Si hay error buscando el perfil, usar CUSTOMER como default
-        // Esto evita loops infinitos por errores temporales de BD
-        console.error('Error obteniendo perfil:', error);
-        role = 'CUSTOMER';
-    }
-
-    // 1. Redirección si intenta ir al login ya autenticado
+    // SOLO PROTEGER /login - evitar loops infinitos en móvil
+    // Las rutas /, /dashboard son manejadas por el layout/page
     if (request.nextUrl.pathname === '/login') {
-        return NextResponse.redirect(new URL(role === 'ADMIN' ? '/dashboard' : '/', request.url))
+        let user = null;
+        try {
+            const { data: { user: authUser } } = await supabase.auth.getUser()
+            user = authUser;
+        } catch (error) {
+            console.error('Error verificando autenticación en /login:', error);
+        }
+
+        // Si está autenticado y trata de entrar a /login, redirigir
+        if (user) {
+            // Obtener el rol del usuario
+            let role = 'CUSTOMER';
+            try {
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('role')
+                    .eq('id', user.id)
+                    .single();
+                if (profile?.role) {
+                    role = profile.role;
+                }
+            } catch (error) {
+                console.error('Error obteniendo perfil:', error);
+            }
+
+            // Redirigir al home o dashboard según el rol
+            return NextResponse.redirect(new URL(role === 'ADMIN' ? '/dashboard' : '/', request.url))
+        }
     }
 
-    // 2. Bloqueo de Dashboard para Clientes
-    if (role === 'CUSTOMER' && request.nextUrl.pathname.startsWith('/dashboard')) {
-        return NextResponse.redirect(new URL('/', request.url))
-    }
-
-    // 3. Redirección de Admin al Dashboard si intenta entrar al home
-    if (role === 'ADMIN' && request.nextUrl.pathname === '/') {
-        return NextResponse.redirect(new URL('/dashboard', request.url))
-    }
-
+    // PERMITIR TODAS LAS OTRAS RUTAS - el cliente manejará la protección
     return response
 }
 
