@@ -6,25 +6,37 @@ import { useTickets } from "@/hooks/useTickets";
 import { ticketService } from "@/services/ticketService";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 function PortalClienteContent() {
   const supabase = createClient();
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
+  const [checking, setChecking] = useState(true);
 
   const { tickets: misTickets, loading: loadingTickets } = useTickets(supabase, userId || undefined);
 
-  // useEffect(() => {
-  //   supabase.auth.getUser().then(({ data }) => {
-  //     if (data.user) {
-  //       setUserId(data.user.id);
-  //     } else {
-  //       // Si no está autenticado, redirigir al login con reload
-  //       window.location.href = '/login';
-  //     }
-  //   });
-  // }, [supabase, router]);
+  useEffect(() => {
+    // Verificar autenticación y obtener userId
+    const checkAuth = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setUserId(user.id);
+        } else {
+          // No autenticado - redirigir a login
+          window.location.href = '/login';
+        }
+      } catch (error) {
+        console.error('Error verificando autenticación:', error);
+        // Si hay error, permitir acceso (fallback seguro)
+      } finally {
+        setChecking(false);
+      }
+    };
+
+    checkAuth();
+  }, [supabase]);
 
   const handleCrearTicket = async (data: { title: string; description: string; priority: string }) => {
     if (!userId) throw new Error("No hay sesión");

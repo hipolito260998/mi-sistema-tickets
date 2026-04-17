@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useTickets } from "@/hooks/useTickets";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 
 function DashboardAgenteContent() {
   const supabase = createClient();
@@ -14,29 +14,6 @@ function DashboardAgenteContent() {
   const { tickets, loading, updateStatus, borrarTicket } = useTickets(supabase);
   const [filtroPrioridad, setFiltroPrioridad] = useState("TODOS");
   const [actualizandoId, setActualizandoId] = useState<string | null>(null);
-  const [authChecking, setAuthChecking] = useState(true);
-
-  useEffect(() => {
-    // Verificar autenticación de forma segura
-    const checkAuth = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          // No autenticado - redirigir
-          window.location.href = '/login';
-        } else {
-          // Autenticado - permitir acceso
-          setAuthChecking(false);
-        }
-      } catch (error) {
-        console.error('Error verificando autenticación:', error);
-        // Si hay error, permitir acceso (fallback seguro)
-        setAuthChecking(false);
-      }
-    };
-    
-    checkAuth();
-  }, [supabase]);
 
   const ticketsFiltrados = tickets.filter((t) => 
     filtroPrioridad === "TODOS" ? true : t.priority === filtroPrioridad
@@ -50,8 +27,7 @@ function DashboardAgenteContent() {
 
   const totalPendientes = tickets.filter((t) => t.status === "OPEN").length;
 
-  // Si estamos chequeando autenticación, mostrar loading
-  if (authChecking || loading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="flex flex-col items-center gap-2">

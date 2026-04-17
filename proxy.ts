@@ -31,7 +31,7 @@ export async function proxy(request: NextRequest) {
         }
     )
 
-    // SOLO proteger /login - redirigir usuarios autenticados away
+    // Proteger /login - redirigir usuarios autenticados away
     if (request.nextUrl.pathname === '/login') {
         let user = null;
         try {
@@ -62,12 +62,28 @@ export async function proxy(request: NextRequest) {
             return NextResponse.redirect(new URL(role === 'ADMIN' ? '/dashboard' : '/', request.url))
         }
     }
+
+    // Proteger / y /dashboard - redirigir no autenticados a /login
+    if (request.nextUrl.pathname === '/' || request.nextUrl.pathname === '/dashboard') {
+        let user = null;
+        try {
+            const { data: { user: authUser } } = await supabase.auth.getUser()
+            user = authUser;
+        } catch (error) {
+            console.error('Error verificando autenticación:', error);
+        }
+
+        // Si NO está autenticado, redirigir a login
+        if (!user) {
+            return NextResponse.redirect(new URL('/login', request.url))
+        }
+    }
     
     return response
 }
 
 // Configuración de rutas protegidas
-// SOLO /login en el proxy - todo lo demás manejado por el cliente
+// Protegemos /login (solo autenticados), / y /dashboard (solo no-autenticados)
 export const config = {
-    matcher: ['/login'],
+    matcher: ['/', '/login', '/dashboard'],
 }
