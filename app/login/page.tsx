@@ -44,11 +44,12 @@ export default function Login() {
 
         if (!isMounted) return;
 
-        // Esperar a que Supabase haya guardado la sesión completamente
-        await new Promise(resolve => setTimeout(resolve, 300));
+        // En móvil, la cookie de Supabase toma más tiempo en propagarse
+        // Usar un delay de 1-2 segundos es crucial para evitar loops infinitos
+        await new Promise(resolve => setTimeout(resolve, 1500));
 
-        // En móvil, router.push() a veces no propaga las cookies rápido
-        // Usar window.location para un full-page reload asegura que las cookies se envían
+        // Usar window.location para un full-page reload
+        // Esto asegura que la cookie se envía en todos los headers
         const destino = role === "ADMIN" ? "/dashboard" : "/";
         window.location.href = destino;
       }

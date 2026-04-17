@@ -32,7 +32,15 @@ export async function proxy(request: NextRequest) {
     )
 
     // 1. Obtener el usuario autenticado
-    const { data: { user } } = await supabase.auth.getUser()
+    let user = null;
+    try {
+        const { data: { user: authUser } } = await supabase.auth.getUser()
+        user = authUser;
+    } catch (error) {
+        // Si hay error al obtener el usuario, no lo rechazamos automáticamente
+        // Podría ser un error temporal de conexión
+        console.error('Error verificando autenticación:', error);
+    }
 
     // --- CASO A: USUARIO NO AUTENTICADO ---
     if (!user) {
@@ -43,13 +51,20 @@ export async function proxy(request: NextRequest) {
     }
 
     // --- CASO B: USUARIO AUTENTICADO ---
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single();
-
-    const role = profile?.role;
+    let role = null;
+    try {
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+        role = profile?.role;
+    } catch (error) {
+        // Si hay error buscando el perfil, usar CUSTOMER como default
+        // Esto evita loops infinitos por errores temporales de BD
+        console.error('Error obteniendo perfil:', error);
+        role = 'CUSTOMER';
+    }
 
     // 1. Redirección si intenta ir al login ya autenticado
     if (request.nextUrl.pathname === '/login') {
