@@ -6,7 +6,7 @@ import { useTickets } from "@/hooks/useTickets";
 import { ticketService } from "@/services/ticketService";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 
 function PortalClienteContent() {
   const supabase = createClient();
@@ -15,16 +15,16 @@ function PortalClienteContent() {
 
   const { tickets: misTickets, loading: loadingTickets } = useTickets(supabase, userId || undefined);
 
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) {
-        setUserId(data.user.id);
-      } else {
-        // Si no está autenticado, redirigir al login con reload
-        window.location.href = '/login';
-      }
-    });
-  }, [supabase, router]);
+  // useEffect(() => {
+  //   supabase.auth.getUser().then(({ data }) => {
+  //     if (data.user) {
+  //       setUserId(data.user.id);
+  //     } else {
+  //       // Si no está autenticado, redirigir al login con reload
+  //       window.location.href = '/login';
+  //     }
+  //   });
+  // }, [supabase, router]);
 
   const handleCrearTicket = async (data: { title: string; description: string; priority: string }) => {
     if (!userId) throw new Error("No hay sesión");

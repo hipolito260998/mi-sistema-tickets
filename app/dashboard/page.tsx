@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useTickets } from "@/hooks/useTickets";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 
 function DashboardAgenteContent() {
   const supabase = createClient();
@@ -15,15 +15,15 @@ function DashboardAgenteContent() {
   const [filtroPrioridad, setFiltroPrioridad] = useState("TODOS");
   const [actualizandoId, setActualizandoId] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Verificar que el usuario está autenticado
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) {
-        // Redirigir con reload completo para asegurar cookies
-        window.location.href = '/login';
-      }
-    });
-  }, [supabase, router]);
+  // useEffect(() => {
+  //   // Verificar que el usuario está autenticado
+  //   supabase.auth.getUser().then(({ data }) => {
+  //     if (!data.user) {
+  //       // Redirigir con reload completo para asegurar cookies
+  //       window.location.href = '/login';
+  //     }
+  //   });
+  // }, [supabase, router]);
 
   const ticketsFiltrados = tickets.filter((t) => 
     filtroPrioridad === "TODOS" ? true : t.priority === filtroPrioridad
