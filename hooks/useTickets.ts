@@ -49,36 +49,68 @@ export function useTickets(supabase: SupabaseClient, userId?: string) {
   }, [supabase, userId]);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && Notification.permission !== "granted") {
-      Notification.requestPermission();
-    }
-
     let isMounted = true;
+
+    // Cargar tickets iniciales
     fetchTickets();
 
-    const canal = supabase
-      .channel("realtime-tickets")
-      .on(
-        "postgres_changes", 
-        { event: "INSERT", schema: "public", table: "tickets" }, 
-        (payload) => { 
-          if (isMounted) {
-            // payload.new ya viene tipado por Supabase como el objeto insertado
-            enviarNotificacionNativa(payload.new as Ticket);
-            fetchTickets(); 
+    // Intentar solicitar permiso de notificaciones (sin fallar si no funciona)
+    try {
+      if (typeof window !== "undefined" && Notification && Notification.permission !== "granted") {
+        Notification.requestPermission().catch(() => {
+          console.log("Notificaciones no disponibles");
+        });
+      }
+    } catch (err) {
+      console.log("Error con notificaciones:", err);
+    }
+
+    // Intentar suscribirse a cambios en realtime (sin fallar si no funciona)
+    let canal: any = null;
+    try {
+      canal = supabase
+        .channel("realtime-tickets")
+        .on(
+          "postgres_changes", 
+          { event: "INSERT", schema: "public", table: "tickets" }, 
+          (payload) => { 
+            if (isMounted) {
+              try {
+                enviarNotificacionNativa(payload.new as Ticket);
+                fetchTickets(); 
+              } catch (err) {
+                console.error("Error procesando INSERT:", err);
+              }
+            }
           }
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "tickets" },
-        () => { if (isMounted) fetchTickets(); }
-      )
-      .subscribe();
+        )
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "tickets" },
+          () => { 
+            if (isMounted) {
+              try {
+                fetchTickets();
+              } catch (err) {
+                console.error("Error procesando UPDATE:", err);
+              }
+            }
+          }
+        )
+        .subscribe();
+    } catch (err) {
+      console.error("Error suscribiendo a realtime:", err);
+    }
 
     return () => {
       isMounted = false;
-      supabase.removeChannel(canal);
+      if (canal) {
+        try {
+          supabase.removeChannel(canal);
+        } catch (err) {
+          console.error("Error removiendo canal:", err);
+        }
+      }
     };
   }, [fetchTickets, supabase]);
 
