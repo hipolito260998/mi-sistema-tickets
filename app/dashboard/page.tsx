@@ -16,10 +16,11 @@ function DashboardAgenteContent() {
   const [actualizandoId, setActualizandoId] = useState<string | null>(null);
 
   useEffect(() => {
-    // Verificar que el usuario está autenticado (contingencia)
+    // Verificar que el usuario está autenticado
     supabase.auth.getUser().then(({ data }) => {
       if (!data.user) {
-        router.replace('/login');
+        // Redirigir con reload completo para asegurar cookies
+        window.location.href = '/login';
       }
     });
   }, [supabase, router]);

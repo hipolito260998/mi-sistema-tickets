@@ -69,6 +69,7 @@ export async function proxy(request: NextRequest) {
 }
 
 // Configuración de rutas protegidas
+// SOLO /login en el proxy - todo lo demás manejado por el cliente
 export const config = {
-    matcher: ['/', '/dashboard/:path*', '/login'],
+    matcher: ['/login'],
 }

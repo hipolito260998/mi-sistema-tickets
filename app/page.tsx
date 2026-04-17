@@ -20,8 +20,8 @@ function PortalClienteContent() {
       if (data.user) {
         setUserId(data.user.id);
       } else {
-        // Si no está autenticado, redirigir al login (contingencia)
-        router.replace('/login');
+        // Si no está autenticado, redirigir al login con reload
+        window.location.href = '/login';
       }
     });
   }, [supabase, router]);
