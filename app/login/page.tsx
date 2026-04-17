@@ -44,23 +44,20 @@ export default function Login() {
 
         if (!isMounted) return;
 
-        setMensaje("⏳ Guardando sesión (2 segundos)...");
+        setMensaje("⏳ Guardando sesión (3.5 segundos)...");
 
-        // CRÍTICO: En móvil, el navegador toma más tiempo en propagar cookies
-        // Esperar 2 segundos asegura que la cookie está disponible en el servidor
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // EN VERCEL: Las cookies toman más tiempo en propagarse que en local
+        // 3.5 segundos es crítico para asegurar que la cookie esté disponible en el servidor
+        await new Promise(resolve => setTimeout(resolve, 3500));
 
         setMensaje("🔄 Cargando...");
 
-        // Refresh la sesión en Next.js
-        router.refresh();
-        
         const destino = role === "ADMIN" ? "/dashboard" : "/";
         
-        // Usar push() que es más Next.js-friendly en móvil
-        router.push(destino);
-        
-        if (isMounted) setLoading(false);
+        // window.location.href hace un FULL PAGE RELOAD que envía las cookies correctamente
+        // Esto es más robusto que router.push() en Vercel con conexiones lentas
+        console.log(`[Login] Redirecting to ${destino}`);
+        window.location.href = destino;
       }
     } catch (err) {
       // TypeScript lo tratará como 'unknown' por defecto
