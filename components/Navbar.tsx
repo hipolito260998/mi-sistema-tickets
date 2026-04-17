@@ -2,21 +2,30 @@
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
+import { User } from "@supabase/supabase-js";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-export default function Navbar() {
+interface NavbarProps {
+  user?: User | null;
+  role?: string | null;
+}
+
+export default function Navbar({ user: serverUser, role: serverRole }: NavbarProps) {
   const pathname = usePathname();
-  const { user, role, loading, logout } = useAuth(); // Inyectamos nuestra lógica
+  const { logout } = useAuth();
+  
+  // Usar datos del servidor si están disponibles
+  const user = serverUser;
+  const role = serverRole;
 
   // Ocultamos el Navbar en el login
   if (pathname === "/login") return null;
@@ -39,12 +48,7 @@ export default function Navbar() {
 
         {/* Zona de Usuario / Acciones */}
         <div className="flex items-center gap-4">
-          {loading ? (
-            <div className="flex items-center gap-3">
-              <Skeleton className="h-7 w-40 hidden sm:block rounded-md" />
-              <Skeleton className="h-10 w-10 rounded-full" />
-            </div>
-          ) : user ? (
+          {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger className="focus:outline-none">
                 <div className="flex items-center gap-3 p-1.5 rounded-full hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-all cursor-pointer">

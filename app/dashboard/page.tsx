@@ -5,13 +5,24 @@ import { TicketTable } from "@/components/TicketTable";
 import { Badge } from "@/components/ui/badge";
 import { useTickets } from "@/hooks/useTickets";
 import { createClient } from "@/utils/supabase/client";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 
-export default function DashboardAgente() {
+function DashboardAgenteContent() {
   const supabase = createClient();
-  const { tickets, loading, updateStatus,borrarTicket } = useTickets(supabase);
+  const router = useRouter();
+  const { tickets, loading, updateStatus, borrarTicket } = useTickets(supabase);
   const [filtroPrioridad, setFiltroPrioridad] = useState("TODOS");
   const [actualizandoId, setActualizandoId] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Verificar que el usuario está autenticado (contingencia)
+    supabase.auth.getUser().then(({ data }) => {
+      if (!data.user) {
+        router.replace('/login');
+      }
+    });
+  }, [supabase, router]);
 
   const ticketsFiltrados = tickets.filter((t) => 
     filtroPrioridad === "TODOS" ? true : t.priority === filtroPrioridad
@@ -37,12 +48,9 @@ export default function DashboardAgente() {
   }
 
   return (
-    // 1. h-[calc(100vh-80px)] hace que la vista no sea más grande que tu monitor (80px es un aprox de tu Navbar)
-    // 2. overflow-hidden bloquea el scroll de la ventana entera
     <main className="h-[calc(100vh-80px)] overflow-hidden bg-slate-50/50 p-4 md:p-8 flex flex-col">
       <div className="max-w-6xl mx-auto w-full h-full flex flex-col">
         
-        {/* ENCABEZADO: flex-shrink-0 evita que se aplaste */}
         <header className="flex-shrink-0 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <div>
             <h1 className="text-3xl font-black text-slate-900 tracking-tight">
@@ -60,7 +68,6 @@ export default function DashboardAgente() {
           )}
         </header>
 
-        {/* FILTROS: flex-shrink-0 evita que se aplasten. Ya no necesitan sticky. */}
         <section className="flex-shrink-0 mb-4">
           <DashboardFilters 
             filtroActual={filtroPrioridad} 
@@ -68,7 +75,6 @@ export default function DashboardAgente() {
           />
         </section>
 
-        {/* CONTENEDOR TABLA: flex-1 le dice "ocupa todo el espacio que sobra hacia abajo" */}
         <section className="flex-1 overflow-hidden rounded-2xl shadow-xl border border-gray-200">
           <TicketTable 
             tickets={ticketsFiltrados}
@@ -81,5 +87,13 @@ export default function DashboardAgente() {
         
       </div>
     </main>
+  );
+}
+
+export default function DashboardAgente() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-slate-500">Cargando...</div></div>}>
+      <DashboardAgenteContent />
+    </Suspense>
   );
 }

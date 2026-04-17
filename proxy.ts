@@ -1,7 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-// Cambiamos el nombre de la función exportada a "proxy"
 export async function proxy(request: NextRequest) {
     let response = NextResponse.next({
         request: {
@@ -14,7 +13,6 @@ export async function proxy(request: NextRequest) {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         {
             cookies: {
-                // Usamos los métodos modernos recomendados por Supabase y Next.js
                 getAll() {
                     return request.cookies.getAll()
                 },
@@ -33,10 +31,10 @@ export async function proxy(request: NextRequest) {
         }
     )
 
-    // 1. Obtenemos el usuario
+    // 1. Obtener el usuario autenticado
     const { data: { user } } = await supabase.auth.getUser()
 
-    // --- CASO A: USUARIO NO LOGUEADO ---
+    // --- CASO A: USUARIO NO AUTENTICADO ---
     if (!user) {
         if (request.nextUrl.pathname !== '/login') {
             return NextResponse.redirect(new URL('/login', request.url))
@@ -44,7 +42,7 @@ export async function proxy(request: NextRequest) {
         return response;
     }
 
-    // --- CASO B: USUARIO LOGUEADO ---
+    // --- CASO B: USUARIO AUTENTICADO ---
     const { data: profile } = await supabase
         .from('profiles')
         .select('role')
@@ -53,7 +51,7 @@ export async function proxy(request: NextRequest) {
 
     const role = profile?.role;
 
-    // 1. Redirección si intenta ir al login ya logueado
+    // 1. Redirección si intenta ir al login ya autenticado
     if (request.nextUrl.pathname === '/login') {
         return NextResponse.redirect(new URL(role === 'ADMIN' ? '/dashboard' : '/', request.url))
     }
@@ -71,7 +69,7 @@ export async function proxy(request: NextRequest) {
     return response
 }
 
-// Configuración de rutas
+// Configuración de rutas protegidas
 export const config = {
     matcher: ['/', '/dashboard/:path*', '/login'],
 }

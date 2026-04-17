@@ -44,13 +44,13 @@ export default function Login() {
 
         if (!isMounted) return;
 
-        router.refresh();
+        // Esperar a que Supabase haya guardado la sesión completamente
+        await new Promise(resolve => setTimeout(resolve, 300));
 
+        // En móvil, router.push() a veces no propaga las cookies rápido
+        // Usar window.location para un full-page reload asegura que las cookies se envían
         const destino = role === "ADMIN" ? "/dashboard" : "/";
-
-        setTimeout(() => {
-          router.push(destino);
-        }, 100);
+        window.location.href = destino;
       }
     } catch (err) {
       // TypeScript lo tratará como 'unknown' por defecto

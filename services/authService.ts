@@ -21,14 +21,29 @@ export const authService = {
     
     if (error) throw error;
 
-    // Si la contraseña es correcta, obtenemos el rol de la tabla 'profiles'
-    const { data: profile } = await supabase
+    const userId = data.user?.id;
+    if (!userId) throw new Error("Usuario no autenticado correctamente");
+
+    // Obtener el rol de la tabla 'profiles'
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('role')
-      .eq('id', data.user?.id)
+      .eq('id', userId)
       .single();
 
-    return { user: data.user, role: profile?.role };
+    // Si el perfil no existe, crear uno automáticamente como CUSTOMER
+    if (profileError?.code === 'PGRST116') { // No rows found
+      const { error: insertError } = await supabase
+        .from('profiles')
+        .insert([{ id: userId, role: 'CUSTOMER' }]);
+      
+      if (insertError) throw new Error(`Error creando perfil: ${insertError.message}`);
+      return { user: data.user, role: 'CUSTOMER' };
+    }
+
+    if (profileError) throw profileError;
+
+    return { user: data.user, role: profile?.role || 'CUSTOMER' };
   },
 
   // 3. Cerrar sesión
