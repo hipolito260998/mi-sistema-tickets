@@ -44,14 +44,19 @@ export default function Login() {
 
         if (!isMounted) return;
 
-        // En móvil, la cookie de Supabase toma más tiempo en propagarse
-        // Usar un delay de 1-2 segundos es crucial para evitar loops infinitos
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        // CRÍTICO: En móvil, el navegador toma más tiempo en propagar cookies
+        // Esperar 2 segundos asegura que la cookie está disponible en el servidor
+        await new Promise(resolve => setTimeout(resolve, 2000));
 
-        // Usar window.location para un full-page reload
-        // Esto asegura que la cookie se envía en todos los headers
+        // Refresh la sesión en Next.js
+        router.refresh();
+        
         const destino = role === "ADMIN" ? "/dashboard" : "/";
-        window.location.href = destino;
+        
+        // Usar push() que es más Next.js-friendly en móvil
+        router.push(destino);
+        
+        if (isMounted) setLoading(false);
       }
     } catch (err) {
       // TypeScript lo tratará como 'unknown' por defecto
