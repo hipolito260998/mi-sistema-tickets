@@ -3,16 +3,21 @@ import { SupabaseClient } from '@supabase/supabase-js';
 
 export const ticketService = {
   async getAllTickets(supabase: SupabaseClient): Promise<Ticket[]> {
-    const { data, error } = await supabase
-      .from("tickets")
-      .select(`
-        id, title, description, status, priority, created_at, customer_id,
-        profiles:customer_id (first_name, last_name, email)
-      `)
-      .order("created_at", { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from("tickets")
+        .select(`id, title, description, status, priority, created_at, customer_id`)
+        .order("created_at", { ascending: false });
 
-    if (error) throw error;
-    return (data as unknown as Ticket[]) || [];
+      if (error) {
+        console.error("Error en getAllTickets:", error);
+        throw error;
+      }
+      return (data as unknown as Ticket[]) || [];
+    } catch (err) {
+      console.error("Error crítico en getAllTickets:", err);
+      return [];
+    }
   },
 
   async updateTicketStatus(supabase: SupabaseClient, id: string, status: string): Promise<void> {
