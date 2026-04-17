@@ -26,7 +26,7 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
-    setMensaje("");
+    setMensaje("🔄 Procesando login...");
 
     try {
       if (esRegistro) {
@@ -44,9 +44,13 @@ export default function Login() {
 
         if (!isMounted) return;
 
+        setMensaje("⏳ Guardando sesión (2 segundos)...");
+
         // CRÍTICO: En móvil, el navegador toma más tiempo en propagar cookies
         // Esperar 2 segundos asegura que la cookie está disponible en el servidor
         await new Promise(resolve => setTimeout(resolve, 2000));
+
+        setMensaje("🔄 Cargando...");
 
         // Refresh la sesión en Next.js
         router.refresh();
@@ -64,6 +68,8 @@ export default function Login() {
         // Verificamos si 'err' es realmente un objeto Error para obtener el .message
         const errorMsg =
           err instanceof Error ? err.message : "Error inesperado";
+
+        console.error("Login error:", errorMsg);
 
         setMensaje(
           `❌ ${errorMsg.includes("invalid") ? "Credenciales incorrectas" : errorMsg}`,
