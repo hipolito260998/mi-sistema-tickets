@@ -8,45 +8,70 @@ import { useCallback, useEffect, useState } from 'react';
 export function useTickets(supabase: SupabaseClient, userId?: string) {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState<string>('CUSTOMER');
+  const [userArea, setUserArea] = useState<string | null>(null);
 
   // --- NOTIFICACIONES ---
-  // Tipamos el parámetro como un objeto que tiene al menos lo que necesitamos
   const enviarNotificacionNativa = (nuevoTicket: Partial<Ticket>) => {
     if (Notification.permission === "granted") {
       new Notification("🎫 Nuevo Ticket", {
         body: `${nuevoTicket.title || 'Sin título'}`,
-
       });
     }
   };
 
- const fetchTickets = useCallback(async () => {
+  const fetchTickets = useCallback(async () => {
     try {
-      const data = await ticketService.getAllTickets(supabase);
-      const baseData = data || [];
-      const filtrados = userId 
-        ? baseData.filter(t => t.customer_id === userId) 
-        : baseData;
+      // 1. Obtener perfil del usuario actual
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) return;
 
-      setTickets(filtrados);
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("role, area")
+        .eq("id", authUser.id)
+        .single();
 
-      // --- LÓGICA DE TÍTULO CONDICIONAL ---
-      // Solo mostramos el contador (X) si NO hay userId (es Admin)
-      // O si quieres que el cliente vea SUS propios pendientes, usa 'filtrados'
-      if (!userId) { 
-        const pendientesAdmin = filtrados.filter(t => t.status === "OPEN").length;
-        document.title = pendientesAdmin > 0 ? `(${pendientesAdmin}) Panel Admin` : "IT HelpDesk";
+      const role = profile?.role || 'CUSTOMER';
+      const area = profile?.area || null;
+      setUserRole(role);
+      setUserArea(area);
+
+      // 2. Obtener tickets según el rol
+      let data;
+      if (role === 'ADMIN') {
+        // Admin ve TODOS los tickets
+        console.log('[useTickets] Cargando todos los tickets (ADMIN)');
+        data = await ticketService.getAllTickets(supabase);
+      } else if (role === 'AREA_LEAD') {
+        // Líder de área ve solo tickets de su área
+        console.log('[useTickets] Cargando tickets del área:', area, '(AREA_LEAD)');
+        data = await ticketService.getTicketsByUserArea(supabase, authUser.id);
       } else {
-        // Para el cliente, mantenemos el título limpio o personalizado
-        document.title = "Mi Soporte - IT HelpDesk";
+        // Customer ve solo sus propios tickets
+        console.log('[useTickets] Cargando tickets del customer:', authUser.id);
+        data = await ticketService.getAllTickets(supabase);
+        data = data.filter(t => t.customer_id === authUser.id) || [];
       }
 
+      setTickets(data || []);
+
+      // --- LÓGICA DE TÍTULO CONDICIONAL ---
+      if (role === 'ADMIN') { 
+        const pendientesAdmin = (data || []).filter(t => t.status === "OPEN").length;
+        document.title = pendientesAdmin > 0 ? `(${pendientesAdmin}) Panel Admin` : "IT HelpDesk";
+      } else if (role === 'AREA_LEAD') {
+        const pendientesArea = (data || []).filter(t => t.status === "OPEN").length;
+        document.title = pendientesArea > 0 ? `(${pendientesArea}) ${area}` : `${area} - IT HelpDesk`;
+      } else {
+        document.title = "Mi Soporte - IT HelpDesk";
+      }
     } catch (err) {
       console.error("Error en fetchTickets:", err);
     } finally {
       setLoading(false);
     }
-  }, [supabase, userId]);
+  }, [supabase]);
 
   useEffect(() => {
     let isMounted = true;
@@ -141,5 +166,5 @@ export function useTickets(supabase: SupabaseClient, userId?: string) {
     }
   };
 
-  return { tickets, loading, updateStatus, refresh: fetchTickets,borrarTicket };
+  return { tickets, loading, updateStatus, refresh: fetchTickets, borrarTicket, userRole, userArea };
 }

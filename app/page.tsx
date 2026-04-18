@@ -41,9 +41,19 @@ function PortalClienteContent() {
   const handleCrearTicket = async (data: { title: string; description: string; priority: string }) => {
     if (!userId) throw new Error("No hay sesión");
     
+    // Obtener el perfil del usuario para conseguir su área
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("area")
+      .eq("id", userId)
+      .single();
+
+    const area = profile?.area || "GENERAL";
+
     await ticketService.createTicket(supabase, {
       ...data,
-      customer_id: userId
+      customer_id: userId,
+      area: area  // Asignar área automáticamente
     });
   };
 

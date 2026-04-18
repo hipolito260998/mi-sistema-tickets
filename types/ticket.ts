@@ -1,7 +1,10 @@
 export interface Profile {
+  id?: string;
   first_name: string | null;
   last_name: string | null;
   email: string;
+  role?: 'ADMIN' | 'CUSTOMER' | 'AREA_LEAD';
+  area?: string;
 }
 
 export interface Ticket {
@@ -12,6 +15,7 @@ export interface Ticket {
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
   created_at: string;
   customer_id: string;
+  area?: string;
   profiles: Profile | null; // El JOIN de Supabase
 }
 
@@ -21,6 +25,7 @@ export interface CreateTicketInput {
   description: string;
   priority: string;
   customer_id: string;
+  area?: string;
 }
 
 
