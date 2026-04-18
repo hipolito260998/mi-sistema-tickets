@@ -2,19 +2,19 @@
 
 import { Badge } from "@/components/ui/badge";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/components/ui/select";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from "@/components/ui/table";
 import { Ticket } from "@/types/ticket";
 import { AlertCircle, AlertTriangle, Trash2 } from "lucide-react"; // <-- Agregué AlertTriangle para el modal
@@ -120,6 +120,11 @@ export const TicketTable = ({
                       <div className="text-[10px] opacity-70 font-medium lowercase">
                         {ticket.profiles?.email || "Sin correo"}
                       </div>
+                      {ticket.area && (
+                        <div className="text-[9px] opacity-60 font-semibold uppercase tracking-wider mt-1">
+                          {ticket.area}
+                        </div>
+                      )}
                     </TableCell>
 
                     <TableCell className="p-4 text-sm max-w-[250px]">
