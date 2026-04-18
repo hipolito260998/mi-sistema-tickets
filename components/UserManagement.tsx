@@ -56,10 +56,17 @@ export function UserManagement({ supabase }: UserManagementProps) {
   const saveChanges = async (userId: string) => {
     try {
       setSavingId(userId);
-      await Promise.all([
+      console.log('[UserManagement] Guardando cambios para usuario:', userId);
+      console.log('[UserManagement] Nuevo rol:', editingRole);
+      console.log('[UserManagement] Nueva área:', editingArea);
+
+      // Hacer ambas actualizaciones
+      const [roleResult, areaResult] = await Promise.all([
         userService.updateUserRole(supabase, userId, editingRole as any),
         userService.updateUserArea(supabase, userId, editingArea),
       ]);
+
+      console.log('[UserManagement] Cambios guardados exitosamente');
       
       setUsers(
         users.map((u) =>
@@ -72,9 +79,13 @@ export function UserManagement({ supabase }: UserManagementProps) {
       setEditingId(null);
       setEditingRole("");
       setEditingArea("");
-    } catch (err) {
+      
+      // Recargar usuarios para confirmar cambios
+      await loadUsers();
+    } catch (err: any) {
       console.error("Error guardando cambios:", err);
-      alert("Error al guardar los cambios");
+      console.error("Detalles del error:", err?.message || err?.details || err);
+      alert(`Error al guardar: ${err?.message || "Error desconocido"}`);
     } finally {
       setSavingId(null);
     }
