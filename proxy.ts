@@ -77,6 +77,27 @@ export async function proxy(request: NextRequest) {
         if (!user) {
             return NextResponse.redirect(new URL('/login', request.url))
         }
+
+        // Si está en / (customer area) y es admin, redirigir a dashboard
+        if (request.nextUrl.pathname === '/') {
+            let role = 'CUSTOMER';
+            try {
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('role')
+                    .eq('id', user.id)
+                    .single();
+                if (profile?.role) {
+                    role = profile.role;
+                }
+            } catch (error) {
+                console.error('Error obteniendo perfil en /:', error);
+            }
+
+            if (role === 'ADMIN') {
+                return NextResponse.redirect(new URL('/dashboard', request.url))
+            }
+        }
     }
     
     return response
