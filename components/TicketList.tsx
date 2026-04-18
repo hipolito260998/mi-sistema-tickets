@@ -51,11 +51,25 @@ export const TicketList = ({ tickets, loading }: TicketListProps) => {
                 key={ticket.id} 
                 className="group bg-white p-5 rounded-2xl shadow-sm border border-slate-100 border-l-[6px] border-l-blue-600 flex justify-between items-center hover:shadow-md transition-all duration-300"
               >
-                <div className="space-y-1">
+                <div className="space-y-2 flex-1">
                   <div className="flex items-center gap-2">
                     <h3 className="font-bold text-slate-900">{ticket.title}</h3>
                     {ticket.priority === 'URGENT' && <AlertCircle size={14} className="text-red-500 animate-pulse" />}
                   </div>
+                  
+                  {ticket.profiles && (
+                    <div className="flex items-center gap-2">
+                      <div className="text-[10px] font-semibold text-slate-600">
+                        👤 {ticket.profiles.first_name} {ticket.profiles.last_name}
+                      </div>
+                      {ticket.area && (
+                        <div className="inline-block px-2 py-0.5 bg-slate-100 text-slate-700 text-[9px] font-bold rounded-full uppercase tracking-wide">
+                          {ticket.area}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
                   <p className="text-[10px] text-slate-400 font-mono tracking-tighter uppercase">
                     REF: {ticket.id.substring(0, 8)} • {new Date(ticket.created_at).toLocaleDateString()}
                   </p>
@@ -90,11 +104,25 @@ export const TicketList = ({ tickets, loading }: TicketListProps) => {
                 key={ticket.id} 
                 className="bg-slate-50/50 p-4 rounded-xl border border-slate-100 flex justify-between items-center opacity-60 grayscale-[0.3] hover:opacity-100 hover:grayscale-0 transition-all group"
               >
-                <div>
+                <div className="flex-1">
                   <h3 className="font-bold text-slate-600 text-sm group-hover:text-slate-900 transition-colors">
                     {ticket.title}
                   </h3>
-                  <p className="text-[10px] text-slate-400 font-medium">
+                  
+                  {ticket.profiles && (
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="text-[9px] font-semibold text-slate-500 group-hover:text-slate-700">
+                        👤 {ticket.profiles.first_name} {ticket.profiles.last_name}
+                      </div>
+                      {ticket.area && (
+                        <div className="inline-block px-1.5 py-0.5 bg-slate-200 text-slate-600 text-[8px] font-bold rounded uppercase tracking-wide">
+                          {ticket.area}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  <p className="text-[10px] text-slate-400 font-medium mt-1">
                     Cerrado el {new Date(ticket.created_at).toLocaleDateString()}
                   </p>
                 </div>
