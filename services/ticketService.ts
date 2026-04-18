@@ -27,7 +27,7 @@ export const ticketService = {
           .from("tickets")
           .select(`id, title, description, status, priority, created_at, customer_id, area`)
           .order("created_at", { ascending: false });
-        
+
         if (fallbackError) {
           console.error("Error en fallback getAllTickets:", fallbackError);
           return [];
@@ -46,16 +46,16 @@ export const ticketService = {
       const { data, error } = await supabase
         .from("tickets")
         .select(`
-          id, 
-          title, 
-          description, 
-          status, 
-          priority, 
-          created_at, 
-          customer_id,
-          area,
-          profiles:customer_id (first_name, last_name, email, role, area)
-        `)
+  id, 
+  title, 
+  description, 
+  status, 
+  priority, 
+  created_at, 
+  customer_id,
+  area,
+  profiles (first_name, last_name, email, role, area)
+`)
         .eq("area", area)
         .order("created_at", { ascending: false });
 

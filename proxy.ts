@@ -64,6 +64,7 @@ export async function proxy(request: NextRequest) {
     }
 
     // Proteger / y /dashboard - redirigir no autenticados a /login
+    // Proteger / y /dashboard - redirigir no autenticados a /login
     if (request.nextUrl.pathname === '/' || request.nextUrl.pathname === '/dashboard') {
         let user = null;
         try {
@@ -78,28 +79,32 @@ export async function proxy(request: NextRequest) {
             return NextResponse.redirect(new URL('/login', request.url))
         }
 
-        // Si está en / (customer area) y es admin, redirigir a dashboard
-        if (request.nextUrl.pathname === '/') {
-            let role = 'CUSTOMER';
-            try {
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('role')
-                    .eq('id', user.id)
-                    .single();
-                if (profile?.role) {
-                    role = profile.role;
-                }
-            } catch (error) {
-                console.error('Error obteniendo perfil en /:', error);
+        // Obtener el rol del usuario (Lo necesitamos para ambas rutas)
+        let role = 'CUSTOMER';
+        try {
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('role')
+                .eq('id', user.id)
+                .single();
+            if (profile?.role) {
+                role = profile.role;
             }
+        } catch (error) {
+            console.error('Error obteniendo perfil en middleware:', error);
+        }
 
-            if (role === 'ADMIN') {
-                return NextResponse.redirect(new URL('/dashboard', request.url))
-            }
+        // Regla 1: Si es ADMIN y trata de entrar a la vista de clientes (/), mándalo a su dashboard
+        if (request.nextUrl.pathname === '/' && role === 'ADMIN') {
+            return NextResponse.redirect(new URL('/dashboard', request.url))
+        }
+
+        // Regla 2: Si NO es ADMIN (ej. CUSTOMER o LEAD) y trata de entrar al dashboard, regrésalo a su portal (/)
+        if (request.nextUrl.pathname === '/dashboard' && role !== 'ADMIN') {
+            return NextResponse.redirect(new URL('/', request.url))
         }
     }
-    
+
     return response
 }
 

@@ -62,7 +62,8 @@ export default async function RootLayout({
   return (
     <html
       lang="es"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased` }
     >
       <body className={`${geistSans.className} min-h-full flex flex-col bg-gray-50 text-gray-900`}>
         <Navbar user={user} role={userRole} />
