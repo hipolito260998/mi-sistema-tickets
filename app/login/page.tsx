@@ -26,7 +26,7 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
-    setMensaje("🔄 Procesando login...");
+    setMensaje("");
 
     try {
       if (esRegistro) {
@@ -34,7 +34,7 @@ export default function Login() {
         await authService.signUp(supabase, email, password);
 
         if (isMounted) {
-          setMensaje("✅ Cuenta creada con éxito. Ahora inicia sesión.");
+          setMensaje("");
           setEsRegistro(false);
           setPassword("");
         }
@@ -44,13 +44,13 @@ export default function Login() {
 
         if (!isMounted) return;
 
-        setMensaje("⏳ Guardando sesión (3.5 segundos)...");
+        setMensaje("");
 
         // EN VERCEL: Las cookies toman más tiempo en propagarse que en local
         // 3.5 segundos es crítico para asegurar que la cookie esté disponible en el servidor
         await new Promise((resolve) => setTimeout(resolve, 3500));
 
-        setMensaje("🔄 Cargando...");
+        setMensaje("✅ Inicio de sesión exitoso. Redirigiendo...");
 
         const destino = role === "ADMIN" ? "/dashboard" : "/";
 
