@@ -20,7 +20,7 @@ export async function notificarTicketEnProgreso(ticketId: string, titulo: string
       html: `
         <div style="font-family: sans-serif; color: #333; max-w: 600px; margin: 0 auto;">
           <h2 style="color: #2563eb;">¡Hola!</h2>
-          <p>Queríamos informarte que nuestro equipo ya ha comenzado a trabajar en tu solicitud:</p>
+          <p>Queremos informarte que ya se ha comenzado a trabajar en tu solicitud:</p>
           <blockquote style="border-left: 4px solid #2563eb; padding-left: 10px; background: #f3f4f6; padding: 10px;">
             <strong>ID:</strong> ${ticketId.substring(0, 8)}<br/>
             <strong>Asunto:</strong> ${titulo}
@@ -48,7 +48,7 @@ export async function notificarTicketCerrado(ticketId: string, titulo: string, e
       html: `
         <div style="font-family: sans-serif; color: #333; max-w: 600px; margin: 0 auto;">
           <h2 style="color: #16a34a;">¡Problema Solucionado!</h2>
-          <p>Te informamos que tu solicitud ha sido marcada como resuelta por nuestro equipo:</p>
+          <p>Te informamos que tu solicitud ha sido marcada como resuelta:</p>
           <blockquote style="border-left: 4px solid #16a34a; padding-left: 10px; background: #f0fdf4; padding: 10px;">
             <strong>ID:</strong> ${ticketId.substring(0, 8)}<br/>
             <strong>Asunto:</strong> ${titulo}
