@@ -1,5 +1,6 @@
 "use client";
 
+import { notificarTicketCerrado, notificarTicketEnProgreso } from '@/actions/emailActions';
 import { ticketService } from '@/services/ticketService';
 import { Ticket, TicketStatus } from '@/types/ticket'; // Importa tus tipos
 import { SupabaseClient } from '@supabase/supabase-js';
@@ -141,14 +142,47 @@ export function useTickets(supabase: SupabaseClient, userId?: string) {
 
   const updateStatus = async (id: string, newStatus: string) => {
     try {
+      // 1. Buscamos los datos del ticket antes de que cambie
+      const ticketTarget = tickets.find(t => t.id === id);
+
+      // 2. Actualizamos en Supabase
       await ticketService.updateTicketStatus(supabase, id, newStatus);
       
+      // 3. Actualizamos la interfaz
       setTickets(prev => 
         prev.map(t => t.id === id 
           ? { ...t, status: newStatus as TicketStatus } // <-- Convertimos string a TicketStatus
           : t
         )
       );
+
+      // 4. Lógica de correos automatizados
+      if (ticketTarget) {
+        const emailCliente = ticketTarget.profiles?.email;
+        const tituloTicket = ticketTarget.title;
+
+        if (emailCliente) {
+          // --- CONDICIÓN 1: Pasa a En Progreso ---
+          if (newStatus === 'IN_PROGRESS') {
+            notificarTicketEnProgreso(id, tituloTicket, emailCliente)
+              .then(res => {
+                if (!res.success) console.error("Error email progreso:", res.error);
+                else console.log("Notificación de progreso enviada a:", emailCliente);
+              });
+          } 
+          // --- CONDICIÓN 2: Pasa a Cerrado/Resuelto ---
+          // Nota: Verifica que 'CLOSED' sea exactamente el nombre del estado en tu base de datos
+          else if (newStatus === 'CLOSED') {
+            notificarTicketCerrado(id, tituloTicket, emailCliente)
+              .then(res => {
+                if (!res.success) console.error("Error email cerrado:", res.error);
+                else console.log("Notificación de cierre enviada a:", emailCliente);
+              });
+          }
+        } else {
+          console.warn("Ticket actualizado, pero el cliente no tiene email registrado.");
+        }
+      }
     } catch (err) {
       console.error("Error al actualizar:", err);
     }
