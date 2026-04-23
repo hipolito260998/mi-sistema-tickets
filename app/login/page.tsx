@@ -48,12 +48,12 @@ export default function Login() {
 
         // EN VERCEL: Las cookies toman más tiempo en propagarse que en local
         // 3.5 segundos es crítico para asegurar que la cookie esté disponible en el servidor
-        await new Promise(resolve => setTimeout(resolve, 3500));
+        await new Promise((resolve) => setTimeout(resolve, 3500));
 
         setMensaje("🔄 Cargando...");
 
         const destino = role === "ADMIN" ? "/dashboard" : "/";
-        
+
         // window.location.href hace un FULL PAGE RELOAD que envía las cookies correctamente
         // Esto es más robusto que router.push() en Vercel con conexiones lentas
         console.log(`[Login] Redirecting to ${destino}`);
@@ -71,9 +71,9 @@ export default function Login() {
         setMensaje(
           `❌ ${errorMsg.includes("invalid") ? "Credenciales incorrectas" : errorMsg}`,
         );
-        setLoading(false)
+        setLoading(false);
       }
-    } 
+    }
   };
 
   return (
@@ -142,23 +142,6 @@ export default function Login() {
             {mensaje}
           </div>
         )}
-
-        <div className="mt-6 text-center text-sm border-t pt-4">
-          <span className="text-gray-600">
-            {esRegistro ? "¿Ya tienes cuenta?" : "¿No tienes cuenta?"}
-          </span>
-          <button
-            type="button"
-            onClick={() => {
-              setEsRegistro(!esRegistro);
-              setMensaje("");
-              setPassword("");
-            }}
-            className="ml-2 text-blue-600 hover:text-blue-800 hover:underline font-semibold outline-none transition"
-          >
-            {esRegistro ? "Inicia sesión aquí" : "Regístrate aquí"}
-          </button>
-        </div>
       </div>
     </main>
   );
