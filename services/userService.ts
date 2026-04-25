@@ -30,7 +30,7 @@ export const userService = {
 
   async createUser(supabase: SupabaseClient, email: string, password: string, first_name: string, last_name: string, role: 'ADMIN' | 'CUSTOMER' | 'AREA_LEAD', area: string): Promise<UserProfile> {
     try {
-      // 1. Crear el usuario en Auth
+      // 1. Crear el usuario en Auth (Esto dispara el Trigger en tu Base de Datos)
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -45,22 +45,22 @@ export const userService = {
         throw new Error("No se pudo obtener el ID del usuario creado");
       }
 
-      // 2. Crear el perfil en la tabla profiles
+      // 2. ACTUALIZAR el perfil que el Trigger acaba de crear
+      // Cambiamos el .insert() por .update() y agregamos el .eq()
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .insert([{
-          id: authData.user.id,
-          email,
+        .update({
           first_name,
           last_name,
           role,
           area
-        }])
+        })
+        .eq("id", authData.user.id)
         .select()
         .single();
 
       if (profileError) {
-        console.error("Error creando perfil:", profileError);
+        console.error("Error actualizando perfil del nuevo usuario:", profileError);
         throw profileError;
       }
 
