@@ -129,7 +129,7 @@ export function UserManagement({ supabase }: UserManagementProps) {
         newUser.role as any,
         newUser.area
       );
-
+      
       console.log('[UserManagement] Usuario creado exitosamente:', created);
       
       setUsers([...users, created]);

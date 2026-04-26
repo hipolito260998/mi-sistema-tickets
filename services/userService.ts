@@ -30,6 +30,8 @@ export const userService = {
 
   async createUser(supabase: SupabaseClient, email: string, password: string, first_name: string, last_name: string, role: 'ADMIN' | 'CUSTOMER' | 'AREA_LEAD', area: string): Promise<UserProfile> {
     try {
+
+
       // 1. Crear el usuario en Auth (Esto dispara el Trigger en tu Base de Datos)
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
