@@ -1,4 +1,4 @@
-import { SupabaseClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 export interface UserProfile {
   id: string;
@@ -31,9 +31,20 @@ export const userService = {
   async createUser(supabase: SupabaseClient, email: string, password: string, first_name: string, last_name: string, role: 'ADMIN' | 'CUSTOMER' | 'AREA_LEAD', area: string): Promise<UserProfile> {
     try {
 
+        const tempSupabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+            storageKey: 'temp-user-creation-key',
+          }
+        }
+      );
 
       // 1. Crear el usuario en Auth (Esto dispara el Trigger en tu Base de Datos)
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const { data: authData, error: authError } = await tempSupabase.auth.signUp({
         email,
         password,
       });
