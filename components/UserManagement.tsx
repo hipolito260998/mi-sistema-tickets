@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { UserProfile, userService } from "@/services/userService";
 import { SupabaseClient } from "@supabase/supabase-js";
-import { AlertCircle, CheckCircle, UserPlus, XCircle } from "lucide-react";
+import { AlertCircle, AlertTriangle, CheckCircle, Trash2, UserPlus, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const AREAS = ["DISEÑO", "SOPORTE", "DESARROLLO", "VENTAS", "MARKETING", "GENERAL"];
@@ -32,6 +32,8 @@ export function UserManagement({ supabase }: UserManagementProps) {
   const [successModal, setSuccessModal] = useState<{ show: boolean; message: string }>({ show: false, message: "" });
   const [errorModal, setErrorModal] = useState<{ show: boolean; message: string }>({ show: false, message: "" });
   const [validationModal, setValidationModal] = useState<{ show: boolean; message: string }>({ show: false, message: "" });
+  const [userToDelete, setUserToDelete] = useState<{ id: string; email: string } | null>(null);
+  const [deletingUser, setDeletingUser] = useState(false);
   const [newUser, setNewUser] = useState({
     email: "",
     password: "",
@@ -154,6 +156,35 @@ export function UserManagement({ supabase }: UserManagementProps) {
       setErrorModal({ show: true, message: `Error al crear usuario: ${err?.message || "Error desconocido"}` });
     } finally {
       setCreatingUser(false);
+    }
+  };
+
+  const deleteUser = async () => {
+    if (!userToDelete) return;
+
+    try {
+      setDeletingUser(true);
+
+      // Primero, eliminar del directorio de autenticación via admin API (si es posible)
+      // Para esto, usamos la función RPC o eliminamos directamente del perfil
+      
+      // Eliminar de la tabla profiles
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userToDelete.id);
+
+      if (profileError) throw profileError;
+
+      // Actualizar la lista local
+      setUsers(users.filter(u => u.id !== userToDelete.id));
+      setUserToDelete(null);
+      setSuccessModal({ show: true, message: `Usuario ${userToDelete.email} eliminado exitosamente` });
+    } catch (err: any) {
+      console.error("Error eliminando usuario:", err);
+      setErrorModal({ show: true, message: `Error al eliminar usuario: ${err?.message || "Error desconocido"}` });
+    } finally {
+      setDeletingUser(false);
     }
   };
 
@@ -416,12 +447,21 @@ export function UserManagement({ supabase }: UserManagementProps) {
                         </Button>
                       </div>
                     ) : (
-                      <Button
-                        onClick={() => startEditing(user)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded"
-                      >
-                        Editar
-                      </Button>
+                      <div className="flex gap-2 justify-end">
+                        <Button
+                          onClick={() => startEditing(user)}
+                          className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded"
+                        >
+                          Editar
+                        </Button>
+                        <button
+                          onClick={() => setUserToDelete({ id: user.id, email: user.email })}
+                          className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
+                          title="Eliminar usuario"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     )}
                   </td>
                 </tr>
@@ -512,6 +552,38 @@ export function UserManagement({ supabase }: UserManagementProps) {
                 className="w-full px-4 py-2.5 text-sm font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl transition-all shadow-md shadow-amber-200"
               >
                 Aceptar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE CONFIRMACIÓN DE ELIMINACIÓN DE USUARIO */}
+      {userToDelete && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 text-center">
+              <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                <AlertTriangle className="text-red-600" size={24} />
+              </div>
+              <h3 className="text-xl font-black text-slate-900 mb-2">¿Eliminar Usuario?</h3>
+              <p className="text-slate-600 text-sm font-medium mb-6">
+                Esta acción eliminará a <span className="font-bold">{userToDelete.email}</span> de la base de datos. Esta acción es irreversible.
+              </p>
+            </div>
+            <div className="bg-slate-50 p-4 flex gap-3 border-t border-slate-100">
+              <button
+                onClick={() => setUserToDelete(null)}
+                className="flex-1 px-4 py-2.5 text-sm font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-100 rounded-xl transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={deleteUser}
+                disabled={deletingUser}
+                className="flex-1 px-4 py-2.5 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-all shadow-md shadow-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {deletingUser ? "Eliminando..." : "Sí, eliminar"}
               </button>
             </div>
           </div>
