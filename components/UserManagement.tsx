@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { UserProfile, userService } from "@/services/userService";
 import { SupabaseClient } from "@supabase/supabase-js";
-import { UserPlus } from "lucide-react";
+import { AlertCircle, CheckCircle, UserPlus, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const AREAS = ["DISEÑO", "SOPORTE", "DESARROLLO", "VENTAS", "MARKETING", "GENERAL"];
@@ -29,6 +29,9 @@ export function UserManagement({ supabase }: UserManagementProps) {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [creatingUser, setCreatingUser] = useState(false);
+  const [successModal, setSuccessModal] = useState<{ show: boolean; message: string }>({ show: false, message: "" });
+  const [errorModal, setErrorModal] = useState<{ show: boolean; message: string }>({ show: false, message: "" });
+  const [validationModal, setValidationModal] = useState<{ show: boolean; message: string }>({ show: false, message: "" });
   const [newUser, setNewUser] = useState({
     email: "",
     password: "",
@@ -100,7 +103,7 @@ export function UserManagement({ supabase }: UserManagementProps) {
       await loadUsers();
     } catch (err: any) {
       console.error("Error guardando cambios:", err);
-      alert(`Error al guardar: ${err?.message || "Error desconocido"}`);
+      setErrorModal({ show: true, message: `Error al guardar: ${err?.message || "Error desconocido"}` });
     } finally {
       setSavingId(null);
     }
@@ -112,12 +115,14 @@ export function UserManagement({ supabase }: UserManagementProps) {
       setCreatingUser(true);
 
       if (!newUser.email || !newUser.password || !newUser.first_name || !newUser.last_name) {
-        alert("Por favor completa todos los campos");
+        setValidationModal({ show: true, message: "Por favor completa todos los campos" });
+        setCreatingUser(false);
         return;
       }
 
       if (newUser.password.length < 6) {
-        alert("La contraseña debe tener al menos 6 caracteres");
+        setValidationModal({ show: true, message: "La contraseña debe tener al menos 6 caracteres" });
+        setCreatingUser(false);
         return;
       }
 
@@ -143,10 +148,10 @@ export function UserManagement({ supabase }: UserManagementProps) {
         area: "GENERAL"
       });
       setShowCreateForm(false);
-      alert(`Usuario ${created.email} creado exitosamente`);
+      setSuccessModal({ show: true, message: `Usuario ${created.email} creado exitosamente` });
     } catch (err: any) {
       console.error("Error creando usuario:", err);
-      alert(`Error al crear usuario: ${err?.message || "Error desconocido"}`);
+      setErrorModal({ show: true, message: `Error al crear usuario: ${err?.message || "Error desconocido"}` });
     } finally {
       setCreatingUser(false);
     }
@@ -437,6 +442,81 @@ export function UserManagement({ supabase }: UserManagementProps) {
           <strong>Nota:</strong> Los cambios se guardan inmediatamente. Los usuarios deben recargar la página para ver los cambios reflejados.
         </p>
       </div>
+
+      {/* MODAL DE ÉXITO */}
+      {successModal.show && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 text-center">
+              <div className="mx-auto w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                <CheckCircle className="text-green-600" size={24} />
+              </div>
+              <h3 className="text-xl font-black text-slate-900 mb-2">¡Éxito!</h3>
+              <p className="text-slate-600 text-sm font-medium mb-6">
+                {successModal.message}
+              </p>
+            </div>
+            <div className="bg-slate-50 p-4 flex gap-3 border-t border-slate-100">
+              <button
+                onClick={() => setSuccessModal({ show: false, message: "" })}
+                className="w-full px-4 py-2.5 text-sm font-bold text-white bg-green-600 hover:bg-green-700 rounded-xl transition-all shadow-md shadow-green-200"
+              >
+                Aceptar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE ERROR */}
+      {errorModal.show && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 text-center">
+              <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                <XCircle className="text-red-600" size={24} />
+              </div>
+              <h3 className="text-xl font-black text-slate-900 mb-2">Error</h3>
+              <p className="text-slate-600 text-sm font-medium mb-6">
+                {errorModal.message}
+              </p>
+            </div>
+            <div className="bg-slate-50 p-4 flex gap-3 border-t border-slate-100">
+              <button
+                onClick={() => setErrorModal({ show: false, message: "" })}
+                className="w-full px-4 py-2.5 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-all shadow-md shadow-red-200"
+              >
+                Aceptar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE VALIDACIÓN */}
+      {validationModal.show && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6 text-center">
+              <div className="mx-auto w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mb-4">
+                <AlertCircle className="text-amber-600" size={24} />
+              </div>
+              <h3 className="text-xl font-black text-slate-900 mb-2">Campos Incompletos</h3>
+              <p className="text-slate-600 text-sm font-medium mb-6">
+                {validationModal.message}
+              </p>
+            </div>
+            <div className="bg-slate-50 p-4 flex gap-3 border-t border-slate-100">
+              <button
+                onClick={() => setValidationModal({ show: false, message: "" })}
+                className="w-full px-4 py-2.5 text-sm font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl transition-all shadow-md shadow-amber-200"
+              >
+                Aceptar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
