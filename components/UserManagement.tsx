@@ -165,21 +165,36 @@ export function UserManagement({ supabase }: UserManagementProps) {
     try {
       setDeletingUser(true);
 
-      // Primero, eliminar del directorio de autenticación via admin API (si es posible)
-      // Para esto, usamos la función RPC o eliminamos directamente del perfil
-      
-      // Eliminar de la tabla profiles
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', userToDelete.id);
+      // Obtener el token de autenticación
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
 
-      if (profileError) throw profileError;
+      if (!token) {
+        throw new Error("No hay sesión activa");
+      }
+
+      // Llamar a la API route para eliminar usuario (auth + profiles)
+      const response = await fetch("/api/admin/delete-user", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          userId: userToDelete.id,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Error al eliminar usuario");
+      }
 
       // Actualizar la lista local
       setUsers(users.filter(u => u.id !== userToDelete.id));
       setUserToDelete(null);
-      setSuccessModal({ show: true, message: `Usuario ${userToDelete.email} eliminado exitosamente` });
+      setSuccessModal({ show: true, message: `Usuario ${userToDelete.email} eliminado exitosamente de autenticación y base de datos` });
     } catch (err: any) {
       console.error("Error eliminando usuario:", err);
       setErrorModal({ show: true, message: `Error al eliminar usuario: ${err?.message || "Error desconocido"}` });
