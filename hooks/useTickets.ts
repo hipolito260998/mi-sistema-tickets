@@ -92,42 +92,55 @@ export function useTickets(supabase: SupabaseClient, userId?: string) {
       console.log("Error con notificaciones:", err);
     }
 
-    // Intentar suscribirse a cambios en realtime (sin fallar si no funciona)
+    // Intentar suscribirse a cambios en realtime
     let canal: RealtimeChannel | null = null;
-    try {
-      canal = supabase
-        .channel("realtime-tickets")
-        .on(
-          "postgres_changes", 
-          { event: "INSERT", schema: "public", table: "tickets" }, 
-          (payload) => { 
-            if (isMounted) {
-              try {
-                enviarNotificacionNativa(payload.new as Ticket);
-                fetchTickets(); 
-              } catch (err) {
-                console.error("Error procesando INSERT:", err);
+    
+    const setupRealtime = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        const currentUserId = user?.id;
+
+        canal = supabase
+          .channel(`tickets-realtime-${Date.now()}`)
+          .on(
+            "postgres_changes", 
+            { event: "INSERT", schema: "public", table: "tickets" }, 
+            (payload) => { 
+              if (isMounted) {
+                try {
+                  const newTicket = payload.new as Ticket;
+                  // Solo notificar si NO fuimos nosotros quienes lo creamos
+                  if (newTicket.customer_id !== currentUserId) {
+                    enviarNotificacionNativa(newTicket);
+                  }
+                  fetchTickets(); 
+                } catch (err) {
+                  console.error("Error procesando INSERT:", err);
+                }
               }
             }
-          }
-        )
-        .on(
-          "postgres_changes",
-          { event: "UPDATE", schema: "public", table: "tickets" },
-          () => { 
-            if (isMounted) {
-              try {
-                fetchTickets();
-              } catch (err) {
-                console.error("Error procesando UPDATE:", err);
-              }
+          )
+          .on(
+            "postgres_changes",
+            { event: "UPDATE", schema: "public", table: "tickets" },
+            () => { 
+              if (isMounted) fetchTickets();
             }
-          }
-        )
-        .subscribe();
-    } catch (err) {
-      console.error("Error suscribiendo a realtime:", err);
-    }
+          )
+          .on(
+            "postgres_changes",
+            { event: "DELETE", schema: "public", table: "tickets" },
+            () => { 
+              if (isMounted) fetchTickets();
+            }
+          )
+          .subscribe();
+      } catch (err) {
+        console.error("Error suscribiendo a realtime:", err);
+      }
+    };
+
+    setupRealtime();
 
     return () => {
       isMounted = false;

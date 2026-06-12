@@ -4,6 +4,7 @@ import { createServerClient } from '@supabase/ssr';
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { cookies } from 'next/headers';
+import { ThemeProvider } from "@/components/ThemeProvider";
 import { Toaster } from 'sonner';
 import "./globals.css";
 
@@ -64,14 +65,16 @@ export default async function RootLayout({
     <html
       lang="es"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased` }
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className={`${geistSans.className} min-h-full flex flex-col bg-gray-50 text-gray-900`}>
-        <Toaster richColors position="top-right" />
-        <Navbar user={user} role={userRole} />
-        <main className="grow">
-          {children}
-        </main>
+      <body className={`${geistSans.className} min-h-full flex flex-col bg-background text-foreground overflow-x-hidden transition-colors duration-300`}>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <Toaster richColors position="top-right" />
+          <Navbar user={user} role={userRole} />
+          <main className="grow flex flex-col">
+            {children}
+          </main>
+        </ThemeProvider>
       </body>
     </html>
   );

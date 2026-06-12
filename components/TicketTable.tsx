@@ -1,33 +1,38 @@
-"use client";
-
+import { ConfirmDeleteModal } from "@/components/ConfirmDeleteModal";
 import { Badge } from "@/components/ui/badge";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import { Ticket, TicketPriority, TicketStatus } from "@/types/ticket";
-import { AlertCircle, Trash2 } from "lucide-react";
-import { useState, useMemo } from "react";
-import { ConfirmDeleteModal } from "./ConfirmDeleteModal";
+import { Inbox, Trash2 } from "lucide-react";
+import { useMemo, useState } from "react";
 
 interface TicketTableProps {
   tickets: Ticket[];
   actualizandoId: string | null;
-  onStatusChange: (id: string, nuevoEstado: string) => void;
+  onStatusChange: (id: string, newStatus: TicketStatus) => Promise<void>;
   filtroPrioridad: string;
-  onDelete: (id: string) => void;
+  onDelete: (id: string) => Promise<void>;
 }
+
+const statusPriority: Record<TicketStatus, number> = {
+  OPEN: 1,
+  IN_PROGRESS: 2,
+  RESOLVED: 3,
+  CLOSED: 4,
+};
 
 export const TicketTable = ({
   tickets,
@@ -36,16 +41,36 @@ export const TicketTable = ({
   filtroPrioridad,
   onDelete,
 }: TicketTableProps) => {
-  
-  // --- 2. NUEVO ESTADO PARA EL MODAL ---
-  // Guarda el ID del ticket que queremos borrar, o null si el modal está cerrado
-  const [ticketToDelete, setTicketToDelete] = useState<string | null>(null);
+  const [ticketAEliminar, setTicketAEliminar] = useState<Ticket | null>(null);
 
-  const statusPriority: Record<TicketStatus, number> = {
-    OPEN: 1,
-    IN_PROGRESS: 2,
-    RESOLVED: 3,
-    CLOSED: 4,
+  const getStatusStyles = (status: TicketStatus) => {
+    switch (status) {
+      case "OPEN":
+        return "bg-amber-500/10 text-amber-400 border-amber-500/30";
+      case "IN_PROGRESS":
+        return "bg-blue-500/10 text-blue-400 border-blue-500/30";
+      case "RESOLVED":
+        return "bg-emerald-500/10 text-emerald-400 border-emerald-500/30";
+      case "CLOSED":
+        return "bg-slate-500/10 text-slate-400 border-slate-500/30";
+      default:
+        return "bg-slate-500/10 text-slate-400 border-slate-500/30";
+    }
+  };
+
+  const getPriorityStyles = (priority: TicketPriority) => {
+    switch (priority) {
+      case "URGENT":
+        return "bg-rose-500/20 text-rose-400 border-rose-500/30 font-bold";
+      case "HIGH":
+        return "bg-orange-500/10 text-orange-400 border-orange-500/30";
+      case "MEDIUM":
+        return "bg-blue-500/10 text-blue-400 border-blue-500/30";
+      case "LOW":
+        return "bg-emerald-500/10 text-emerald-400 border-emerald-500/30";
+      default:
+        return "bg-slate-500/10 text-slate-400 border-slate-500/30";
+    }
   };
 
   const priorityTranslations: Record<TicketPriority, string> = {
@@ -57,123 +82,109 @@ export const TicketTable = ({
 
   const ticketsOrdenados = useMemo(() => {
     return [...tickets].sort((a, b) => {
-      const pesoA = statusPriority[a.status] || 99;
-      const pesoB = statusPriority[b.status] || 99;
-      if (pesoA !== pesoB) return pesoA - pesoB;
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      if (statusPriority[a.status] !== statusPriority[b.status]) {
+        return statusPriority[a.status] - statusPriority[b.status];
+      }
+      return (
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
     });
   }, [tickets]);
 
-  const getPriorityStyles = (priority: string) => {
-    switch (priority?.toUpperCase()) {
-      case "URGENT": return "bg-red-600 text-white border-none shadow-sm";
-      case "HIGH": return "bg-orange-50 text-orange-600 border-orange-200";
-      case "MEDIUM": return "bg-blue-50 text-blue-600 border-blue-200";
-      default: return "bg-green-50 text-green-600 border-green-200";
-    }
-  };
-
-  const getStatusStyles = (status: string) => {
-    switch (status?.toUpperCase()) {
-      case "CLOSED": return "bg-red-50 text-red-600 border-red-200";
-      case "RESOLVED": return "bg-purple-50 text-purple-600 border-purple-200";
-      case "IN_PROGRESS": return "bg-blue-50 text-blue-600 border-blue-200";
-      case "OPEN": return "bg-green-50 text-green-600 border-green-200";
-      default: return "bg-slate-50 text-slate-600 border-slate-200";
-    }
-  };
-
   return (
-    <> {/* Envolvemos todo en un fragmento vacío para poder poner el modal por fuera de la tabla */}
-      <div className="bg-white h-full flex flex-col w-full">
-        <div className="flex-1 min-h-0 w-full relative [&>div]:h-full [&>div]:overflow-auto [&>div]:[scrollbar-width:none] [&>div::-webkit-scrollbar]:hidden">
-          <Table className="border-collapse-separate border-spacing-0">
-            <TableHeader className="sticky top-0 z-20 bg-gray-900 shadow-md">
-              <TableRow className="border-none hover:bg-transparent">
-                <TableHead className="p-4 text-white text-[10px] uppercase tracking-widest font-black bg-gray-900 h-12">Usuario</TableHead>
-                <TableHead className="p-4 text-white text-[10px] uppercase tracking-widest font-black bg-gray-900 h-12">Detalles</TableHead>
-                <TableHead className="p-4 text-white text-[10px] uppercase tracking-widest font-black text-center bg-gray-900 h-12">Prioridad</TableHead>
-                <TableHead className="p-4 text-white text-[10px] uppercase tracking-widest font-black text-center bg-gray-900 h-12">Estado</TableHead>
-                <TableHead className="p-4 text-white text-[10px] uppercase tracking-widest font-black text-center bg-gray-900 h-12">Fecha</TableHead>
-                <TableHead className="w-[50px] bg-gray-900 h-12"></TableHead>
+    <>
+      <div className="relative h-full flex flex-col">
+        <div className="flex-1 overflow-auto">
+          <Table>
+            <TableHeader className="bg-black/5 dark:bg-white/5 sticky top-0 z-10 backdrop-blur-md shadow-sm border-b border-black/10 dark:border-white/10">
+              <TableRow className="hover:bg-transparent border-none">
+                <TableHead className="w-[100px] font-black text-muted-foreground uppercase text-[10px] tracking-widest pl-6">ID</TableHead>
+                <TableHead className="font-black text-muted-foreground uppercase text-[10px] tracking-widest">Asunto</TableHead>
+                <TableHead className="font-black text-muted-foreground uppercase text-[10px] tracking-widest">Cliente</TableHead>
+                <TableHead className="font-black text-muted-foreground uppercase text-[10px] tracking-widest text-center">Prioridad</TableHead>
+                <TableHead className="font-black text-muted-foreground uppercase text-[10px] tracking-widest text-center">Estado</TableHead>
+                <TableHead className="font-black text-muted-foreground uppercase text-[10px] tracking-widest text-center">Fecha</TableHead>
+                <TableHead className="text-right pr-6 font-black text-muted-foreground uppercase text-[10px] tracking-widest w-[80px]"></TableHead>
               </TableRow>
             </TableHeader>
-
-            <TableBody className="divide-y divide-gray-100">
+            <TableBody>
               {ticketsOrdenados.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="p-20 text-center text-gray-400 italic">
-                    No hay tickets con prioridad &quot;{filtroPrioridad}&quot;
+                  <TableCell colSpan={7} className="h-[400px] text-center">
+                    <div className="flex flex-col items-center justify-center text-muted-foreground gap-4">
+                      <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center border border-white/10">
+                        <Inbox size={32} />
+                      </div>
+                      <p className="font-medium text-lg">No hay tickets {filtroPrioridad !== "TODOS" ? "con esta prioridad" : "disponibles"}.</p>
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : (
                 ticketsOrdenados.map((ticket) => (
-                  <TableRow
-                    key={ticket.id}
-                    className={`transition-all duration-300 border-none ${
-                      ticket.status === "CLOSED" || ticket.status === "RESOLVED"
-                        ? "bg-gray-50/50 text-gray-400"
-                        : "bg-white hover:bg-blue-50/30 text-gray-900"
-                    }`}
+                  <TableRow 
+                    key={ticket.id} 
+                    className="group border-b border-black/5 dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors duration-300"
                   >
-                    <TableCell className="p-4">
-                      <div className="text-sm font-bold">
-                        {ticket.profiles ? `${ticket.profiles.first_name} ${ticket.profiles.last_name}` : "Usuario Desconocido"}
+                    <TableCell className="font-mono text-xs text-muted-foreground pl-6">
+                      #{ticket.id.substring(0, 6)}
+                    </TableCell>
+                    
+                    <TableCell>
+                      <div className="font-bold text-foreground group-hover:text-primary transition-colors">
+                        {ticket.title}
                       </div>
-                      <div className="text-[10px] opacity-70 font-medium lowercase">
-                        {ticket.profiles?.email || "Sin correo"}
-                      </div>
-                      {ticket.area && (
-                        <div className="text-[9px] opacity-60 font-semibold uppercase tracking-wider mt-1">
-                          {ticket.area}
+                    </TableCell>
+                    
+                    <TableCell>
+                      {ticket.profiles && (
+                        <div className="flex flex-col">
+                          <span className="text-sm font-semibold text-foreground">
+                            {Array.isArray(ticket.profiles)
+                              ? `${ticket.profiles[0]?.first_name} ${ticket.profiles[0]?.last_name}`
+                              : `${ticket.profiles.first_name} ${ticket.profiles.last_name}`}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {Array.isArray(ticket.profiles)
+                              ? ticket.profiles[0]?.email
+                              : ticket.profiles.email}
+                          </span>
                         </div>
                       )}
                     </TableCell>
-
-                    <TableCell className="p-4 text-sm max-w-[250px]">
-                      <div className="flex items-center gap-2">
-                        <div className="font-bold tracking-tight truncate">
-                          {ticket.title}
-                        </div>
-                        {ticket.priority === "URGENT" && (
-                          <AlertCircle size={14} className="text-red-500 animate-pulse flex-shrink-0" />
-                        )}
-                      </div>
-                      <div className="text-[11px] opacity-60 italic truncate">
-                        {ticket.description}
-                      </div>
-                    </TableCell>
-
+                    
                     <TableCell className="p-4 text-center">
-                      <Badge variant="outline" className={`rounded-full px-3 py-0.5 text-[10px] font-black uppercase tracking-wider ${getPriorityStyles(ticket.priority)}`}>
+                      <Badge variant="outline" className={`rounded-full px-3 py-0.5 text-[10px] font-black uppercase tracking-widest border ${getPriorityStyles(ticket.priority)}`}>
                         {priorityTranslations[ticket.priority] || ticket.priority}
                       </Badge>
                     </TableCell>
-
+                    
                     <TableCell className="p-4 text-center">
-                      <Select defaultValue={ticket.status} onValueChange={(val) => onStatusChange(ticket.id, val)} disabled={actualizandoId === ticket.id}>
-                        <SelectTrigger className={`w-[130px] h-8 mx-auto rounded-full font-black text-[10px] uppercase tracking-tighter shadow-none transition-all ${getStatusStyles(ticket.status)}`}>
+                      <Select
+                        value={ticket.status}
+                        onValueChange={(val) => onStatusChange(ticket.id, val as TicketStatus)}
+                        disabled={actualizandoId === ticket.id}
+                      >
+                        <SelectTrigger className={`w-[130px] mx-auto h-8 text-xs font-bold rounded-full border focus:ring-0 ${getStatusStyles(ticket.status)} transition-all hover:brightness-110`}>
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="OPEN" className="text-[11px] font-bold text-green-600">ABIERTO</SelectItem>
-                          <SelectItem value="IN_PROGRESS" className="text-[11px] font-bold text-blue-600">EN PROGRESO</SelectItem>
-                          <SelectItem value="RESOLVED" className="text-[11px] font-bold text-purple-600">RESUELTO</SelectItem>
-                          <SelectItem value="CLOSED" className="text-[11px] font-bold text-red-600">CERRADO</SelectItem>
+                        <SelectContent className="bg-background border-white/10 shadow-2xl rounded-xl">
+                          <SelectItem value="OPEN" className="font-bold text-amber-400 focus:bg-amber-400/10 focus:text-amber-300">Abierto</SelectItem>
+                          <SelectItem value="IN_PROGRESS" className="font-bold text-blue-400 focus:bg-blue-400/10 focus:text-blue-300">En Proceso</SelectItem>
+                          <SelectItem value="RESOLVED" className="font-bold text-emerald-400 focus:bg-emerald-400/10 focus:text-emerald-300">Resuelto</SelectItem>
+                          <SelectItem value="CLOSED" className="font-bold text-slate-400 focus:bg-slate-400/10 focus:text-slate-300">Cerrado</SelectItem>
                         </SelectContent>
                       </Select>
                     </TableCell>
-
-                    <TableCell className="p-4 text-center text-[11px] font-mono font-medium opacity-60">
+                    
+                    <TableCell className="text-muted-foreground text-xs font-medium text-center">
                       {new Date(ticket.created_at).toLocaleDateString()}
                     </TableCell>
 
-                    <TableCell className="p-4 text-right">
-                      {/* --- 3. CAMBIAMOS EL BOTÓN --- */}
-                      {/* En lugar de window.confirm, solo guardamos el ID en el estado */}
+                    <TableCell className="text-right pr-6">
                       <button
-                        onClick={() => setTicketToDelete(ticket.id)}
-                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
+                        onClick={() => setTicketAEliminar(ticket)}
+                        disabled={actualizandoId === ticket.id}
+                        className="p-2 text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 rounded-full transition-all disabled:opacity-50"
                         title="Eliminar ticket"
                       >
                         <Trash2 size={16} />
@@ -187,12 +198,13 @@ export const TicketTable = ({
         </div>
       </div>
 
-      <ConfirmDeleteModal
-        isOpen={!!ticketToDelete}
-        onClose={() => setTicketToDelete(null)}
-        onConfirm={() => {
-          if (ticketToDelete) {
-            onDelete(ticketToDelete);
+      <ConfirmDeleteModal 
+        isOpen={!!ticketAEliminar}
+        onClose={() => setTicketAEliminar(null)}
+        onConfirm={async () => {
+          if (ticketAEliminar) {
+            await onDelete(ticketAEliminar.id);
+            setTicketAEliminar(null);
           }
         }}
       />

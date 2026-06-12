@@ -4,14 +4,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { UserProfile, userService } from "@/services/userService";
 import { SupabaseClient } from "@supabase/supabase-js";
-import { AlertCircle, AlertTriangle, CheckCircle, Trash2, UserPlus, XCircle } from "lucide-react";
+import { AlertCircle, AlertTriangle, CheckCircle, Trash2, UserPlus, XCircle, Info } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const AREAS = ["DISEÑO", "SOPORTE", "DESARROLLO", "VENTAS", "MARKETING", "GENERAL"];
 const ROLES = [
-  { value: "CUSTOMER", label: "Cliente", color: "bg-blue-100 text-blue-800" },
-  { value: "AREA_LEAD", label: "Líder de Área", color: "bg-purple-100 text-purple-800" },
-  { value: "ADMIN", label: "Administrador", color: "bg-red-100 text-red-800" },
+  { value: "CUSTOMER", label: "Cliente", color: "bg-blue-500/10 text-blue-400 border-blue-500/30 border" },
+  { value: "AREA_LEAD", label: "Líder de Área", color: "bg-purple-500/10 text-purple-400 border-purple-500/30 border" },
+  { value: "ADMIN", label: "Administrador", color: "bg-rose-500/10 text-rose-400 border-rose-500/30 border" },
 ];
 
 interface UserManagementProps {
@@ -164,11 +164,6 @@ export function UserManagement({ supabase }: UserManagementProps) {
 
     try {
       setDeletingUser(true);
-
-      // Primero, eliminar del directorio de autenticación via admin API (si es posible)
-      // Para esto, usamos la función RPC o eliminamos directamente del perfil
-      
-      // Eliminar de la tabla profiles
       const { error: profileError } = await supabase
         .from('profiles')
         .delete()
@@ -176,7 +171,6 @@ export function UserManagement({ supabase }: UserManagementProps) {
 
       if (profileError) throw profileError;
 
-      // Actualizar la lista local
       setUsers(users.filter(u => u.id !== userToDelete.id));
       setUserToDelete(null);
       setSuccessModal({ show: true, message: `Usuario ${userToDelete.email} eliminado exitosamente` });
@@ -191,7 +185,10 @@ export function UserManagement({ supabase }: UserManagementProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-96">
-        <div className="text-slate-500">Cargando usuarios...</div>
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+          <div className="text-muted-foreground font-medium text-sm tracking-widest uppercase">Cargando usuarios...</div>
+        </div>
       </div>
     );
   }
@@ -201,7 +198,7 @@ export function UserManagement({ supabase }: UserManagementProps) {
       {/* Botón para crear nuevo usuario */}
       <button
         onClick={() => setShowCreateForm(true)}
-        className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition inline-flex items-center gap-2"
+        className="bg-primary hover:bg-primary/90 text-primary-foreground font-black py-3 px-6 rounded-xl transition-all shadow-sm hover:scale-[1.02] active:scale-95 inline-flex items-center gap-2"
       >
         <UserPlus size={18} />
         Crear Nuevo Usuario
@@ -209,98 +206,94 @@ export function UserManagement({ supabase }: UserManagementProps) {
 
       {/* MODAL para crear usuario */}
       {showCreateForm && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-xl p-4 animate-in fade-in duration-200">
+          <div className="bg-background border border-white/10 rounded-3xl shadow-lg w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto relative">
             
-            {/* Encabezado del modal */}
-            <div className="p-6 text-center border-b border-slate-100 bg-gradient-to-r from-green-50 to-blue-50">
-              <div className="mx-auto w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                <UserPlus className="text-green-600" size={24} />
+            <div className="absolute top-0 left-0 w-full h-1 bg-primary" />
+            
+            <div className="p-6 text-center border-b border-white/5 relative z-10">
+              <div className="mx-auto w-12 h-12 bg-primary/10 border border-primary/30 rounded-full flex items-center justify-center mb-4">
+                <UserPlus className="text-primary" size={24} />
               </div>
-              <h3 className="text-2xl font-black text-slate-900 mb-1">Crear Nuevo Usuario</h3>
-              <p className="text-sm text-slate-500">Ingresa los datos del nuevo usuario</p>
+              <h3 className="text-2xl font-black text-foreground mb-1 tracking-tight">Crear Nuevo Usuario</h3>
+              <p className="text-sm text-muted-foreground font-medium">Ingresa los datos del nuevo usuario corporativo</p>
             </div>
 
-            {/* Contenido del formulario */}
-            <form onSubmit={createNewUser} className="p-6 space-y-4">
-              {/* Nombre y Apellido */}
-              <div className="grid grid-cols-2 gap-4">
+            <form onSubmit={createNewUser} className="p-4 sm:p-6 space-y-4 relative z-10">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-black text-slate-700 mb-2 uppercase tracking-wide">Nombre</label>
+                  <label className="block text-[10px] font-black text-muted-foreground mb-2 uppercase tracking-wide">Nombre</label>
                   <input
                     type="text"
-                    placeholder="Juan"
                     value={newUser.first_name}
                     onChange={(e) => setNewUser({ ...newUser, first_name: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition bg-slate-50 hover:bg-white"
+                    className="w-full px-3 py-2.5 rounded-xl border border-black/10 dark:border-white/10 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-foreground placeholder-black/30 dark:placeholder-white/20"
+                    placeholder="Juan"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-black text-slate-700 mb-2 uppercase tracking-wide">Apellido</label>
+                  <label className="block text-[10px] font-black text-muted-foreground mb-2 uppercase tracking-wide">Apellido</label>
                   <input
                     type="text"
-                    placeholder="Pérez"
                     value={newUser.last_name}
                     onChange={(e) => setNewUser({ ...newUser, last_name: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition bg-slate-50 hover:bg-white"
+                    className="w-full px-3 py-2.5 rounded-xl border border-black/10 dark:border-white/10 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-foreground placeholder-black/30 dark:placeholder-white/20"
+                    placeholder="Pérez"
                     required
                   />
                 </div>
               </div>
 
-              {/* Email */}
               <div>
-                <label className="block text-xs font-black text-slate-700 mb-2 uppercase tracking-wide">Correo Electrónico</label>
+                <label className="block text-[10px] font-black text-muted-foreground mb-2 uppercase tracking-wide">Correo Institucional</label>
                 <input
                   type="email"
-                  placeholder="juan.perez@example.com"
                   value={newUser.email}
                   onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                  className="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition bg-slate-50 hover:bg-white"
+                  className="w-full px-3 py-2.5 rounded-xl border border-black/10 dark:border-white/10 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-foreground placeholder-black/30 dark:placeholder-white/20"
+                  placeholder="usuario@empresa.com"
                   required
                 />
               </div>
 
-              {/* Contraseña */}
               <div>
-                <label className="block text-xs font-black text-slate-700 mb-2 uppercase tracking-wide">Contraseña</label>
+                <label className="block text-[10px] font-black text-muted-foreground mb-2 uppercase tracking-wide">Contraseña</label>
                 <input
                   type="password"
-                  placeholder="Mínimo 6 caracteres"
                   value={newUser.password}
                   onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                  className="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition bg-slate-50 hover:bg-white"
+                  className="w-full px-3 py-2.5 rounded-xl border border-black/10 dark:border-white/10 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-foreground placeholder-black/30 dark:placeholder-white/20"
+                  placeholder="••••••••"
                   required
                 />
-                <p className="text-[10px] text-slate-400 mt-1">Debe tener al menos 6 caracteres</p>
+                <p className="text-[10px] text-muted-foreground/60 mt-1 font-medium">Debe tener al menos 6 caracteres</p>
               </div>
 
-              {/* Rol y Área */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-black text-slate-700 mb-2 uppercase tracking-wide">Rol</label>
+                  <label className="block text-[10px] font-black text-muted-foreground mb-2 uppercase tracking-wide">Rol</label>
                   <select
                     value={newUser.role}
                     onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition bg-slate-50 hover:bg-white font-medium"
+                    className="w-full px-3 py-2.5 rounded-xl border border-black/10 dark:border-white/10 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-foreground font-medium"
                   >
                     {ROLES.map((role) => (
-                      <option key={role.value} value={role.value}>
+                      <option key={role.value} value={role.value} className="bg-background text-foreground">
                         {role.label}
                       </option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-black text-slate-700 mb-2 uppercase tracking-wide">Área</label>
+                  <label className="block text-[10px] font-black text-muted-foreground mb-2 uppercase tracking-wide">Área</label>
                   <select
                     value={newUser.area}
                     onChange={(e) => setNewUser({ ...newUser, area: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition bg-slate-50 hover:bg-white font-medium"
+                    className="w-full px-3 py-2.5 rounded-xl border border-black/10 dark:border-white/10 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-foreground font-medium"
                   >
                     {AREAS.map((area) => (
-                      <option key={area} value={area}>
+                      <option key={area} value={area} className="bg-background text-foreground">
                         {area}
                       </option>
                     ))}
@@ -309,18 +302,17 @@ export function UserManagement({ supabase }: UserManagementProps) {
               </div>
             </form>
 
-            {/* Botones de acción */}
-            <div className="bg-slate-50 p-4 flex gap-3 border-t border-slate-100">
+            <div className="bg-white/5 p-4 flex gap-3 border-t border-white/10 relative z-10">
               <button
                 onClick={() => setShowCreateForm(false)}
-                className="flex-1 px-4 py-2.5 text-sm font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-100 rounded-xl transition-all duration-200"
+                className="flex-1 px-4 py-3 text-sm font-bold text-muted-foreground bg-transparent border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/10 hover:text-black dark:hover:text-white rounded-xl transition-all"
               >
                 Cancelar
               </button>
               <button
                 onClick={createNewUser}
                 disabled={creatingUser}
-                className="flex-1 px-4 py-2.5 text-sm font-bold text-white bg-green-600 hover:bg-green-700 rounded-xl transition-all duration-200 shadow-md shadow-green-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-3 text-sm font-bold text-primary-foreground bg-primary hover:bg-primary/90 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {creatingUser ? "Creando..." : "Crear Usuario"}
               </button>
@@ -330,24 +322,24 @@ export function UserManagement({ supabase }: UserManagementProps) {
       )}
 
       {/* Tabla de usuarios */}
-      <div className="rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200">
-                <th className="px-6 py-3 text-left font-semibold text-slate-700">
+      <div className="rounded-2xl border border-black/10 dark:border-white/10 shadow-sm overflow-hidden bg-card dark:bg-background/50 backdrop-blur-sm">
+        <div className="overflow-x-auto pb-2">
+          <table className="w-full min-w-[800px] text-sm">
+            <thead className="bg-black/5 dark:bg-white/5 border-b border-black/10 dark:border-white/10">
+              <tr>
+                <th className="px-6 py-4 text-left font-black text-muted-foreground uppercase text-[10px] tracking-widest">
                   Email
                 </th>
-                <th className="px-6 py-3 text-left font-semibold text-slate-700">
+                <th className="px-6 py-4 text-left font-black text-muted-foreground uppercase text-[10px] tracking-widest">
                   Nombre
                 </th>
-                <th className="px-6 py-3 text-left font-semibold text-slate-700">
+                <th className="px-6 py-4 text-left font-black text-muted-foreground uppercase text-[10px] tracking-widest">
                   Rol
                 </th>
-                <th className="px-6 py-3 text-left font-semibold text-slate-700">
+                <th className="px-6 py-4 text-left font-black text-muted-foreground uppercase text-[10px] tracking-widest">
                   Área
                 </th>
-                <th className="px-6 py-3 text-right font-semibold text-slate-700">
+                <th className="px-6 py-4 text-right font-black text-muted-foreground uppercase text-[10px] tracking-widest">
                   Acciones
                 </th>
               </tr>
@@ -356,12 +348,12 @@ export function UserManagement({ supabase }: UserManagementProps) {
               {users.map((user) => (
                 <tr
                   key={user.id}
-                  className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
+                  className="group border-b border-black/5 dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors duration-300"
                 >
-                  <td className="px-6 py-4 text-slate-900 font-medium">
+                  <td className="px-6 py-4 text-foreground font-mono text-xs">
                     {user.email}
                   </td>
-                  <td className="px-6 py-4 text-slate-600">
+                  <td className="px-6 py-4 text-foreground font-bold group-hover:text-primary transition-colors">
                     {editingId === user.id ? (
                       <div className="flex gap-2">
                         <input
@@ -369,20 +361,20 @@ export function UserManagement({ supabase }: UserManagementProps) {
                           value={editingFirstName}
                           onChange={(e) => setEditingFirstName(e.target.value)}
                           placeholder="Nombre"
-                          className="px-2 py-1 rounded border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1"
+                          className="px-3 py-1.5 rounded-lg border border-black/10 dark:border-white/10 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-black/5 dark:bg-white/5 text-foreground flex-1"
                         />
                         <input
                           type="text"
                           value={editingLastName}
                           onChange={(e) => setEditingLastName(e.target.value)}
                           placeholder="Apellido"
-                          className="px-2 py-1 rounded border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1"
+                          className="px-3 py-1.5 rounded-lg border border-black/10 dark:border-white/10 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-black/5 dark:bg-white/5 text-foreground flex-1"
                         />
                       </div>
                     ) : (
                       user.first_name && user.last_name
                         ? `${user.first_name} ${user.last_name}`
-                        : "—"
+                        : <span className="text-muted-foreground font-normal">S/N</span>
                     )}
                   </td>
                   <td className="px-6 py-4">
@@ -390,19 +382,19 @@ export function UserManagement({ supabase }: UserManagementProps) {
                       <select
                         value={editingRole}
                         onChange={(e) => setEditingRole(e.target.value)}
-                        className="px-3 py-1 rounded border border-slate-300 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="px-3 py-1.5 rounded-lg border border-black/10 dark:border-white/10 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary bg-black/5 dark:bg-white/5 text-foreground"
                       >
                         {ROLES.map((role) => (
-                          <option key={role.value} value={role.value}>
+                          <option key={role.value} value={role.value} className="bg-background text-foreground">
                             {role.label}
                           </option>
                         ))}
                       </select>
                     ) : (
                       <Badge
-                        className={`${
+                        className={`rounded-full px-3 py-0.5 text-[10px] font-black uppercase tracking-widest ${
                           ROLES.find((r) => r.value === user.role)?.color
-                        } border-none text-xs font-semibold`}
+                        }`}
                       >
                         {ROLES.find((r) => r.value === user.role)?.label}
                       </Badge>
@@ -413,16 +405,16 @@ export function UserManagement({ supabase }: UserManagementProps) {
                       <select
                         value={editingArea}
                         onChange={(e) => setEditingArea(e.target.value)}
-                        className="px-3 py-1 rounded border border-slate-300 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="px-3 py-1.5 rounded-lg border border-black/10 dark:border-white/10 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary bg-black/5 dark:bg-white/5 text-foreground"
                       >
                         {AREAS.map((area) => (
-                          <option key={area} value={area}>
+                          <option key={area} value={area} className="bg-background text-foreground">
                             {area}
                           </option>
                         ))}
                       </select>
                     ) : (
-                      <Badge className="bg-slate-100 text-slate-800 border-none">
+                      <Badge variant="outline" className="rounded-full px-3 py-0.5 text-[10px] font-black uppercase tracking-widest bg-black/5 dark:bg-white/5 text-muted-foreground border-black/10 dark:border-white/10">
                         {user.area || "GENERAL"}
                       </Badge>
                     )}
@@ -431,17 +423,15 @@ export function UserManagement({ supabase }: UserManagementProps) {
                     {editingId === user.id ? (
                       <div className="flex gap-2 justify-end">
                         <Button
-                          onClick={() =>
-                            saveChanges(user.id)
-                          }
+                          onClick={() => saveChanges(user.id)}
                           disabled={savingId === user.id}
-                          className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1.5 rounded"
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-4 py-1.5 rounded-lg font-bold"
                         >
                           {savingId === user.id ? "Guardando..." : "Guardar"}
                         </Button>
                         <Button
                           onClick={cancelEditing}
-                          className="bg-slate-300 hover:bg-slate-400 text-slate-800 text-xs px-3 py-1.5 rounded"
+                          className="bg-transparent hover:bg-black/10 dark:hover:bg-white/10 border border-black/10 dark:border-white/10 text-muted-foreground hover:text-foreground text-xs px-4 py-1.5 rounded-lg font-bold"
                         >
                           Cancelar
                         </Button>
@@ -450,13 +440,13 @@ export function UserManagement({ supabase }: UserManagementProps) {
                       <div className="flex gap-2 justify-end">
                         <Button
                           onClick={() => startEditing(user)}
-                          className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded"
+                          className="bg-transparent hover:bg-primary/20 text-primary border border-primary/30 text-xs px-4 py-1.5 rounded-lg font-bold transition-all"
                         >
                           Editar
                         </Button>
                         <button
                           onClick={() => setUserToDelete({ id: user.id, email: user.email })}
-                          className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
+                          className="p-2 text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 rounded-full transition-all duration-200"
                           title="Eliminar usuario"
                         >
                           <Trash2 size={16} />
@@ -473,35 +463,37 @@ export function UserManagement({ supabase }: UserManagementProps) {
 
       {users.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-slate-500">No hay usuarios para mostrar</p>
+          <p className="text-muted-foreground font-medium">No hay usuarios para mostrar.</p>
         </div>
       )}
 
-      <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <p className="text-sm text-blue-900">
-          <strong>Nota:</strong> Los cambios se guardan inmediatamente. Los usuarios deben recargar la página para ver los cambios reflejados.
+      <div className="mt-4 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-start gap-3">
+        <Info size={20} className="text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+        <p className="text-sm text-blue-800 dark:text-blue-300 font-medium leading-relaxed">
+          <span className="font-bold text-blue-900 dark:text-blue-400">NOTA:</span> Los cambios se guardan inmediatamente en la base de datos. Los usuarios deben recargar la página para ver sus nuevos permisos reflejados.
         </p>
       </div>
 
       {/* MODAL DE ÉXITO */}
       {successModal.show && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="p-6 text-center">
-              <div className="mx-auto w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                <CheckCircle className="text-green-600" size={24} />
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-background/80 backdrop-blur-xl p-4 animate-in fade-in duration-200">
+          <div className="bg-card rounded-3xl shadow-xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-black/10 dark:border-white/10 relative">
+            <div className="absolute top-0 left-0 w-full h-1 bg-emerald-500" />
+            <div className="p-8 text-center relative z-10">
+              <div className="mx-auto w-16 h-16 bg-emerald-500/10 border border-emerald-500/30 rounded-full flex items-center justify-center mb-6">
+                <CheckCircle className="text-emerald-400" size={32} />
               </div>
-              <h3 className="text-xl font-black text-slate-900 mb-2">¡Éxito!</h3>
-              <p className="text-slate-600 text-sm font-medium mb-6">
+              <h3 className="text-2xl font-black text-foreground mb-3 tracking-tight">¡Éxito!</h3>
+              <p className="text-muted-foreground text-sm font-medium">
                 {successModal.message}
               </p>
             </div>
-            <div className="bg-slate-50 p-4 flex gap-3 border-t border-slate-100">
+            <div className="bg-black/5 dark:bg-white/5 p-4 flex gap-3 border-t border-black/10 dark:border-white/10 relative z-10">
               <button
                 onClick={() => setSuccessModal({ show: false, message: "" })}
-                className="w-full px-4 py-2.5 text-sm font-bold text-white bg-green-600 hover:bg-green-700 rounded-xl transition-all shadow-md shadow-green-200"
+                className="w-full px-4 py-3 text-sm font-bold text-emerald-50 bg-emerald-600 hover:bg-emerald-500 rounded-xl transition-all"
               >
-                Aceptar
+                Continuar
               </button>
             </div>
           </div>
@@ -510,23 +502,24 @@ export function UserManagement({ supabase }: UserManagementProps) {
 
       {/* MODAL DE ERROR */}
       {errorModal.show && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="p-6 text-center">
-              <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
-                <XCircle className="text-red-600" size={24} />
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-background/80 backdrop-blur-xl p-4 animate-in fade-in duration-200">
+          <div className="bg-card rounded-3xl shadow-xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-black/10 dark:border-white/10 relative">
+            <div className="absolute top-0 left-0 w-full h-1 bg-rose-500" />
+            <div className="p-8 text-center relative z-10">
+              <div className="mx-auto w-16 h-16 bg-rose-500/10 border border-rose-500/30 rounded-full flex items-center justify-center mb-6">
+                <XCircle className="text-rose-400" size={32} />
               </div>
-              <h3 className="text-xl font-black text-slate-900 mb-2">Error</h3>
-              <p className="text-slate-600 text-sm font-medium mb-6">
+              <h3 className="text-2xl font-black text-foreground mb-3 tracking-tight">Error</h3>
+              <p className="text-muted-foreground text-sm font-medium">
                 {errorModal.message}
               </p>
             </div>
-            <div className="bg-slate-50 p-4 flex gap-3 border-t border-slate-100">
+            <div className="bg-black/5 dark:bg-white/5 p-4 flex gap-3 border-t border-black/10 dark:border-white/10 relative z-10">
               <button
                 onClick={() => setErrorModal({ show: false, message: "" })}
-                className="w-full px-4 py-2.5 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-all shadow-md shadow-red-200"
+                className="w-full px-4 py-3 text-sm font-bold text-rose-50 bg-rose-600 hover:bg-rose-500 rounded-xl transition-all"
               >
-                Aceptar
+                Cerrar
               </button>
             </div>
           </div>
@@ -535,23 +528,24 @@ export function UserManagement({ supabase }: UserManagementProps) {
 
       {/* MODAL DE VALIDACIÓN */}
       {validationModal.show && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="p-6 text-center">
-              <div className="mx-auto w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mb-4">
-                <AlertCircle className="text-amber-600" size={24} />
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-background/80 backdrop-blur-xl p-4 animate-in fade-in duration-200">
+          <div className="bg-card rounded-3xl shadow-xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-black/10 dark:border-white/10 relative">
+            <div className="absolute top-0 left-0 w-full h-1 bg-amber-500" />
+            <div className="p-8 text-center relative z-10">
+              <div className="mx-auto w-16 h-16 bg-amber-500/10 border border-amber-500/30 rounded-full flex items-center justify-center mb-6">
+                <AlertCircle className="text-amber-400" size={32} />
               </div>
-              <h3 className="text-xl font-black text-slate-900 mb-2">Campos Incompletos</h3>
-              <p className="text-slate-600 text-sm font-medium mb-6">
+              <h3 className="text-xl font-black text-foreground mb-3 tracking-tight">Campos Incompletos</h3>
+              <p className="text-muted-foreground text-sm font-medium">
                 {validationModal.message}
               </p>
             </div>
-            <div className="bg-slate-50 p-4 flex gap-3 border-t border-slate-100">
+            <div className="bg-black/5 dark:bg-white/5 p-4 flex gap-3 border-t border-black/10 dark:border-white/10 relative z-10">
               <button
                 onClick={() => setValidationModal({ show: false, message: "" })}
-                className="w-full px-4 py-2.5 text-sm font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl transition-all shadow-md shadow-amber-200"
+                className="w-full px-4 py-3 text-sm font-bold text-amber-50 bg-amber-600 hover:bg-amber-500 rounded-xl transition-all"
               >
-                Aceptar
+                Entendido
               </button>
             </div>
           </div>
@@ -560,28 +554,29 @@ export function UserManagement({ supabase }: UserManagementProps) {
 
       {/* MODAL DE CONFIRMACIÓN DE ELIMINACIÓN DE USUARIO */}
       {userToDelete && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="p-6 text-center">
-              <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
-                <AlertTriangle className="text-red-600" size={24} />
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-background/80 backdrop-blur-xl p-4 animate-in fade-in duration-200">
+          <div className="bg-card rounded-3xl shadow-xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-black/10 dark:border-white/10 relative">
+            <div className="absolute top-0 left-0 w-full h-1 bg-rose-500" />
+            <div className="p-8 text-center relative z-10">
+              <div className="mx-auto w-16 h-16 bg-rose-500/10 border border-rose-500/30 rounded-full flex items-center justify-center mb-6">
+                <AlertTriangle className="text-rose-400" size={32} />
               </div>
-              <h3 className="text-xl font-black text-slate-900 mb-2">¿Eliminar Usuario?</h3>
-              <p className="text-slate-600 text-sm font-medium mb-6">
-                Esta acción eliminará a <span className="font-bold">{userToDelete.email}</span> de la base de datos. Esta acción es irreversible.
+              <h3 className="text-2xl font-black text-foreground mb-3 tracking-tight">¿Eliminar Usuario?</h3>
+              <p className="text-muted-foreground text-sm font-medium">
+                Se eliminará a <span className="font-bold text-foreground">{userToDelete.email}</span>. Esta acción es irreversible.
               </p>
             </div>
-            <div className="bg-slate-50 p-4 flex gap-3 border-t border-slate-100">
+            <div className="bg-black/5 dark:bg-white/5 p-4 flex gap-3 border-t border-black/10 dark:border-white/10 relative z-10">
               <button
                 onClick={() => setUserToDelete(null)}
-                className="flex-1 px-4 py-2.5 text-sm font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-100 rounded-xl transition-all"
+                className="flex-1 px-4 py-3 text-sm font-bold text-muted-foreground bg-transparent border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/10 hover:text-black dark:hover:text-white rounded-xl transition-all"
               >
                 Cancelar
               </button>
               <button
                 onClick={deleteUser}
                 disabled={deletingUser}
-                className="flex-1 px-4 py-2.5 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-all shadow-md shadow-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-3 text-sm font-bold text-rose-50 bg-rose-600 hover:bg-rose-500 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {deletingUser ? "Eliminando..." : "Sí, eliminar"}
               </button>

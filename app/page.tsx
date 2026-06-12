@@ -59,17 +59,37 @@ function PortalClienteContent() {
   };
 
   return (
-    <main className="min-h-screen md:min-h-0 md:h-[calc(100vh-80px)] bg-slate-50/50 p-6 md:p-10 flex flex-col md:overflow-hidden">
-      <div className="max-w-6xl mx-auto w-full h-full flex flex-col min-h-0">
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 h-full min-h-0">
+    <main className="flex-1 bg-background flex flex-col font-sans selection:bg-primary/30 lg:overflow-hidden">
+      
+      {/* Hero Banner */}
+      <div className="relative overflow-hidden bg-background border-b border-black/10 dark:border-white/5 py-8 lg:py-6 flex-shrink-0">
+        <div className="max-w-6xl mx-auto px-6 relative z-10">
+          <h1 className="text-4xl md:text-5xl font-black text-foreground tracking-tight mb-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            Hola, <span className="text-primary">¿En qué podemos ayudarte?</span>
+          </h1>
+          <p className="text-muted-foreground text-lg max-w-2xl animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
+            Crea un nuevo reporte técnico o revisa el estado de tus solicitudes recientes. Estamos aquí para resolver tus problemas al instante.
+          </p>
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 w-full max-w-6xl mx-auto px-6 py-6 lg:py-8 flex flex-col min-h-0">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12 h-full min-h-0">
           
-          <div className="md:col-span-1 h-fit">
+          <div className="lg:col-span-1 h-full overflow-y-auto pr-2 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
             <TicketForm onSubmit={handleCrearTicket} />
           </div>
 
-          <div className="md:col-span-2 h-full md:overflow-hidden pb-4">
-            <Suspense fallback={<div className="flex items-center justify-center h-full"><div className="text-slate-500">Cargando tickets...</div></div>}>
+          <div className="lg:col-span-2 h-full overflow-hidden pb-4 flex flex-col animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300">
+            <Suspense fallback={
+              <div className="flex items-center justify-center h-full">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                  <div className="text-muted-foreground font-medium text-sm tracking-widest uppercase">Cargando</div>
+                </div>
+              </div>
+            }>
               <TicketList tickets={misTickets} loading={loadingTickets} />
             </Suspense>
           </div>
