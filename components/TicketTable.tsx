@@ -16,9 +16,10 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { Ticket } from "@/types/ticket";
-import { AlertCircle, AlertTriangle, Trash2 } from "lucide-react"; // <-- Agregué AlertTriangle para el modal
-import { useState } from "react"; // <-- 1. Importamos useState
+import { Ticket, TicketPriority, TicketStatus } from "@/types/ticket";
+import { AlertCircle, Trash2 } from "lucide-react";
+import { useState, useMemo } from "react";
+import { ConfirmDeleteModal } from "./ConfirmDeleteModal";
 
 interface TicketTableProps {
   tickets: Ticket[];
@@ -40,26 +41,28 @@ export const TicketTable = ({
   // Guarda el ID del ticket que queremos borrar, o null si el modal está cerrado
   const [ticketToDelete, setTicketToDelete] = useState<string | null>(null);
 
-  const statusPriority: Record<string, number> = {
+  const statusPriority: Record<TicketStatus, number> = {
     OPEN: 1,
     IN_PROGRESS: 2,
     RESOLVED: 3,
     CLOSED: 4,
   };
 
-  const priorityTranslations: Record<string, string> = {
+  const priorityTranslations: Record<TicketPriority, string> = {
     URGENT: "Urgente",
     HIGH: "Alta",
     MEDIUM: "Media",
     LOW: "Baja",
   };
 
-  const ticketsOrdenados = [...tickets].sort((a, b) => {
-    const pesoA = statusPriority[a.status] || 99;
-    const pesoB = statusPriority[b.status] || 99;
-    if (pesoA !== pesoB) return pesoA - pesoB;
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-  });
+  const ticketsOrdenados = useMemo(() => {
+    return [...tickets].sort((a, b) => {
+      const pesoA = statusPriority[a.status] || 99;
+      const pesoB = statusPriority[b.status] || 99;
+      if (pesoA !== pesoB) return pesoA - pesoB;
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+  }, [tickets]);
 
   const getPriorityStyles = (priority: string) => {
     switch (priority?.toUpperCase()) {
@@ -143,7 +146,7 @@ export const TicketTable = ({
 
                     <TableCell className="p-4 text-center">
                       <Badge variant="outline" className={`rounded-full px-3 py-0.5 text-[10px] font-black uppercase tracking-wider ${getPriorityStyles(ticket.priority)}`}>
-                        {priorityTranslations[ticket.priority?.toUpperCase()] || ticket.priority}
+                        {priorityTranslations[ticket.priority] || ticket.priority}
                       </Badge>
                     </TableCell>
 
@@ -184,42 +187,15 @@ export const TicketTable = ({
         </div>
       </div>
 
-      {/* --- 4. NUESTRO MODAL PREMIUM --- */}
-      {/* Si ticketToDelete tiene un ID, mostramos esto encima de toda la pantalla */}
-      {ticketToDelete && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
-            
-            <div className="p-6 text-center">
-              <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
-                <AlertTriangle className="text-red-600" size={24} />
-              </div>
-              <h3 className="text-xl font-black text-slate-900 mb-2">¿Eliminar ticket?</h3>
-              <p className="text-slate-500 text-sm font-medium">
-                Esta acción es definitiva. El ticket será borrado de la base de datos y no se podrá recuperar.
-              </p>
-            </div>
-
-            <div className="bg-slate-50 p-4 flex gap-3">
-              <button
-                onClick={() => setTicketToDelete(null)}
-                className="flex-1 px-4 py-2.5 text-sm font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-100 rounded-xl transition-all"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => {
-                  onDelete(ticketToDelete);
-                  setTicketToDelete(null); // Cerramos el modal
-                }}
-                className="flex-1 px-4 py-2.5 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-all shadow-md shadow-red-200"
-              >
-                Sí, eliminar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDeleteModal
+        isOpen={!!ticketToDelete}
+        onClose={() => setTicketToDelete(null)}
+        onConfirm={() => {
+          if (ticketToDelete) {
+            onDelete(ticketToDelete);
+          }
+        }}
+      />
     </>
   );
 };

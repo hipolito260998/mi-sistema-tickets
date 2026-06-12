@@ -6,16 +6,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { TicketPriority } from "@/types/ticket";
 import { useState } from "react";
 
 interface TicketFormProps {
-  onSubmit: (data: { title: string; description: string; priority: string }) => Promise<void>;
+  onSubmit: (data: { title: string; description: string; priority: TicketPriority }) => Promise<void>;
 }
 
 export const TicketForm = ({ onSubmit }: TicketFormProps) => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [priority, setPriority] = useState("MEDIUM");
+  const [priority, setPriority] = useState<TicketPriority>("MEDIUM");
   const [loadingAction, setLoadingAction] = useState(false);
   const [enviadoExitoso, setEnviadoExitoso] = useState(false);
 
@@ -70,7 +71,7 @@ export const TicketForm = ({ onSubmit }: TicketFormProps) => {
               <Label className="text-[10px] uppercase font-black text-slate-400 tracking-widest">
                 Prioridad
               </Label>
-              <Select value={priority} onValueChange={setPriority}>
+              <Select value={priority} onValueChange={(val) => setPriority(val as TicketPriority)}>
                 <SelectTrigger className="rounded-xl border-slate-200 font-bold text-slate-700">
                   <SelectValue />
                 </SelectTrigger>

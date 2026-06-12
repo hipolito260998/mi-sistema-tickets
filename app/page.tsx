@@ -4,6 +4,7 @@ import { TicketForm } from "@/components/TicketForm";
 import { TicketList } from "@/components/TicketList";
 import { useTickets } from "@/hooks/useTickets";
 import { ticketService } from "@/services/ticketService";
+import { TicketPriority } from "@/types/ticket";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
@@ -38,7 +39,7 @@ function PortalClienteContent() {
     checkAuth();
   }, [supabase]);
 
-  const handleCrearTicket = async (data: { title: string; description: string; priority: string }) => {
+  const handleCrearTicket = async (data: { title: string; description: string; priority: TicketPriority }) => {
     if (!userId) throw new Error("No hay sesión");
     
     // Obtener el perfil del usuario para conseguir su área

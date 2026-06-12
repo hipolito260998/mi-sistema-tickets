@@ -2,9 +2,10 @@
 
 import { notificarTicketCerrado, notificarTicketEnProgreso } from '@/actions/emailActions';
 import { ticketService } from '@/services/ticketService';
-import { Ticket, TicketStatus } from '@/types/ticket'; // Importa tus tipos
-import { SupabaseClient } from '@supabase/supabase-js';
+import { Ticket, TicketStatus } from '@/types/ticket';
+import { SupabaseClient, RealtimeChannel } from '@supabase/supabase-js';
 import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 export function useTickets(supabase: SupabaseClient, userId?: string) {
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -92,7 +93,7 @@ export function useTickets(supabase: SupabaseClient, userId?: string) {
     }
 
     // Intentar suscribirse a cambios en realtime (sin fallar si no funciona)
-    let canal: any = null;
+    let canal: RealtimeChannel | null = null;
     try {
       canal = supabase
         .channel("realtime-tickets")
@@ -141,20 +142,22 @@ export function useTickets(supabase: SupabaseClient, userId?: string) {
   }, [fetchTickets, supabase]);
 
   const updateStatus = async (id: string, newStatus: string) => {
-    try {
-      // 1. Buscamos los datos del ticket antes de que cambie
-      const ticketTarget = tickets.find(t => t.id === id);
+    // 1. Guardar el estado previo para la UI Optimista
+    const previousTickets = [...tickets];
+    const ticketTarget = previousTickets.find(t => t.id === id);
 
-      // 2. Actualizamos en Supabase
+    // 2. UI Optimista: Actualizar inmediatamente la UI
+    setTickets(prev => 
+      prev.map(t => t.id === id 
+        ? { ...t, status: newStatus as TicketStatus }
+        : t
+      )
+    );
+
+    try {
+      // 3. Actualizamos en Supabase
       await ticketService.updateTicketStatus(supabase, id, newStatus);
-      
-      // 3. Actualizamos la interfaz
-      setTickets(prev => 
-        prev.map(t => t.id === id 
-          ? { ...t, status: newStatus as TicketStatus } // <-- Convertimos string a TicketStatus
-          : t
-        )
-      );
+      toast.success('Estado actualizado correctamente');
 
       // 4. Lógica de correos automatizados
       if (ticketTarget) {
@@ -179,24 +182,29 @@ export function useTickets(supabase: SupabaseClient, userId?: string) {
                 else console.log("Notificación de cierre enviada a:", emailCliente);
               });
           }
-        } else {
-          console.warn("Ticket actualizado, pero el cliente no tiene email registrado.");
         }
       }
     } catch (err) {
       console.error("Error al actualizar:", err);
+      toast.error('Error al actualizar el estado');
+      // Revertir UI si hubo error
+      setTickets(previousTickets);
     }
   };
 
   const borrarTicket = async (id: string) => {
+    const previousTickets = [...tickets];
+    // UI Optimista
+    setTickets((prev) => prev.filter((ticket) => ticket.id !== id));
+
     try {
-      // 1. Lo borramos de la base de datos
       await ticketService.deleteTicket(supabase, id);
-      
-      // 2. Lo quitamos de la pantalla instantáneamente
-      setTickets((prev) => prev.filter((ticket) => ticket.id !== id));
+      toast.success('Ticket eliminado');
     } catch (error) {
       console.error("Error al eliminar el ticket:", error);
+      toast.error('Error al eliminar el ticket');
+      // Revertir
+      setTickets(previousTickets);
     }
   };
 

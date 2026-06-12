@@ -4,6 +4,7 @@ import { createServerClient } from '@supabase/ssr';
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { cookies } from 'next/headers';
+import { Toaster } from 'sonner';
 import "./globals.css";
 
 const geistSans = Geist({
@@ -66,6 +67,7 @@ export default async function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased` }
     >
       <body className={`${geistSans.className} min-h-full flex flex-col bg-gray-50 text-gray-900`}>
+        <Toaster richColors position="top-right" />
         <Navbar user={user} role={userRole} />
         <main className="grow">
           {children}
