@@ -13,14 +13,7 @@ export function useTickets(supabase: SupabaseClient, userId?: string) {
   const [userRole, setUserRole] = useState<string>('CUSTOMER');
   const [userArea, setUserArea] = useState<string | null>(null);
 
-  // --- NOTIFICACIONES ---
-  const enviarNotificacionNativa = (nuevoTicket: Partial<Ticket>) => {
-    if (Notification.permission === "granted") {
-      new Notification("🎫 Nuevo Ticket", {
-        body: `${nuevoTicket.title || 'Sin título'}`,
-      });
-    }
-  };
+  // Las notificaciones nativas se eliminaron en favor de los toasts integrados
 
   const fetchTickets = useCallback(async () => {
     try {
@@ -81,16 +74,7 @@ export function useTickets(supabase: SupabaseClient, userId?: string) {
     // Cargar tickets iniciales
     fetchTickets();
 
-    // Intentar solicitar permiso de notificaciones (sin fallar si no funciona)
-    try {
-      if (typeof window !== "undefined" && Notification && Notification.permission !== "granted") {
-        Notification.requestPermission().catch(() => {
-          console.log("Notificaciones no disponibles");
-        });
-      }
-    } catch (err) {
-      console.log("Error con notificaciones:", err);
-    }
+    // Solicitud de permisos nativos eliminada
 
     // Intentar suscribirse a cambios en realtime
     let canal: RealtimeChannel | null = null;
@@ -111,7 +95,10 @@ export function useTickets(supabase: SupabaseClient, userId?: string) {
                   const newTicket = payload.new as Ticket;
                   // Solo notificar si NO fuimos nosotros quienes lo creamos
                   if (newTicket.customer_id !== currentUserId) {
-                    enviarNotificacionNativa(newTicket);
+                    toast.info(`🎫 Nuevo Ticket: ${newTicket.title || 'Sin título'}`, {
+                      description: "Se ha agregado a tu panel.",
+                      duration: 5000,
+                    });
                   }
                   fetchTickets(); 
                 } catch (err) {
