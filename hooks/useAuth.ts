@@ -40,8 +40,13 @@ export function useAuth() {
     });
 
     // 2. ESCUCHAR CAMBIOS DE AUTH (Login/Logout en tiempo real)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (isMounted) {
+        if (event === "PASSWORD_RECOVERY") {
+          window.location.href = "/update-password";
+          return;
+        }
+
         const newUser = session?.user ?? null;
         setUser(newUser);
         if (newUser) {

@@ -20,6 +20,14 @@ function PortalClienteContent() {
   useEffect(() => {
     // Verificar autenticación y obtener userId
     const checkAuth = async () => {
+      // Evitar la redirección si venimos de un correo de recuperación o de login
+      if (typeof window !== 'undefined') {
+        const url = window.location.href;
+        if (url.includes('type=recovery') || url.includes('access_token=') || url.includes('code=')) {
+          return; // Pausamos aquí para que el AuthListener atrape el evento
+        }
+      }
+
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {

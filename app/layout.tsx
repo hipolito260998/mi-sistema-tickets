@@ -6,6 +6,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { cookies } from 'next/headers';
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Toaster } from 'sonner';
+import { AuthListener } from "@/components/AuthListener";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -69,6 +70,7 @@ export default async function RootLayout({
     >
       <body className={`${geistSans.className} min-h-full flex flex-col bg-background text-foreground overflow-x-hidden transition-colors duration-300`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <AuthListener />
           <Toaster richColors position="top-right" />
           <Navbar user={user} role={userRole} />
           <main className="grow flex flex-col">
