@@ -73,10 +73,10 @@ function PortalClienteContent() {
       <div className="relative overflow-hidden bg-background border-b border-black/10 dark:border-white/5 py-8 lg:py-6 flex-shrink-0">
         <div className="max-w-6xl mx-auto px-6 relative z-10">
           <h1 className="text-4xl md:text-5xl font-black text-foreground tracking-tight mb-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            Hola, <span className="text-primary">¿En qué podemos ayudarte?</span>
+            Hola, <span className="text-primary">¿En qué puedo ayudarte?</span>
           </h1>
           <p className="text-muted-foreground text-lg max-w-2xl animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
-            Crea un nuevo reporte técnico o revisa el estado de tus solicitudes recientes. Estamos aquí para resolver tus problemas al instante.
+            Crea un nuevo reporte técnico o revisa el estado de tus solicitudes recientes. Estoy aquí para resolver tus problemas al instante.
           </p>
         </div>
       </div>

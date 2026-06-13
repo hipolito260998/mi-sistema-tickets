@@ -25,7 +25,7 @@ export default function Login() {
   const tips = [
     {
       title: "Seguridad ante todo",
-      text: "Nunca compartas tu contraseña. Nuestro equipo de soporte nunca te pedirá tus credenciales de acceso.",
+      text: "Nunca compartas tu contraseña. El área de TI nunca te pedirá tus credenciales de acceso.",
       image: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=400&h=250"
     },
     {

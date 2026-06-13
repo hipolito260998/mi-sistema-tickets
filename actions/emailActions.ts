@@ -36,7 +36,7 @@ export async function notificarTicketEnProgreso(ticketId: string, titulo: string
 
               <h2 style="color: #0f172a; font-size: 20px; margin-top: 0;">¡Hola!</h2>
               <p style="font-size: 16px; line-height: 1.6; color: #475569; margin-bottom: 24px;">
-                Queremos informarte que uno de nuestros agentes ha tomado tu solicitud y actualmente se encuentra <strong>trabajando en ella</strong>.
+                Quiero informarte que he tomado tu solicitud y actualmente me encuentro <strong>trabajando en ella</strong>.
               </p>
 
               <!-- Ticket Card -->
@@ -101,7 +101,7 @@ export async function notificarTicketCerrado(ticketId: string, titulo: string, e
 
               <h2 style="color: #0f172a; font-size: 20px; margin-top: 0;">¡Problema Solucionado!</h2>
               <p style="font-size: 16px; line-height: 1.6; color: #475569; margin-bottom: 24px;">
-                Te informamos que el equipo de soporte ha finalizado el trabajo y tu solicitud ha sido marcada como <strong>resuelta</strong>.
+                Te informo que he finalizado el trabajo y tu solicitud ha sido marcada como <strong>resuelta</strong>.
               </p>
 
               <!-- Ticket Card -->

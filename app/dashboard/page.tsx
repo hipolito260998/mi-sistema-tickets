@@ -15,11 +15,18 @@ function DashboardAgenteContent() {
   const { tickets, loading, updateStatus, borrarTicket } = useTickets(supabase);
   const [filtroPrioridad, setFiltroPrioridad] = useState("TODOS");
   const [actualizandoId, setActualizandoId] = useState<string | null>(null);
-  const [tab, setTab] = useState<"tickets" | "usuarios">("tickets");
+  const [tab, setTab] = useState<"tickets" | "historial" | "usuarios">("tickets");
 
-  const ticketsFiltrados = tickets.filter((t) => 
-    filtroPrioridad === "TODOS" ? true : t.priority === filtroPrioridad
-  );
+  const ticketsFiltrados = tickets.filter((t) => {
+    // 1. Validar prioridad
+    const pasaPrioridad = filtroPrioridad === "TODOS" ? true : t.priority === filtroPrioridad;
+    
+    // 2. Separar por estado según la pestaña
+    if (tab === "tickets") return t.status !== "CLOSED" && pasaPrioridad;
+    if (tab === "historial") return t.status === "CLOSED" && pasaPrioridad;
+    
+    return pasaPrioridad;
+  });
 
   const handleStatusChange = async (id: string, nuevoEstado: string) => {
     setActualizandoId(id);
@@ -75,6 +82,16 @@ function DashboardAgenteContent() {
             🎫 Tickets
           </button>
           <button
+            onClick={() => setTab("historial")}
+            className={`px-4 py-3 font-bold text-sm transition-all border-b-2 relative ${
+              tab === "historial"
+                ? "text-primary border-primary"
+                : "text-muted-foreground border-transparent hover:text-foreground"
+            }`}
+          >
+            📚 Historial
+          </button>
+          <button
             onClick={() => setTab("usuarios")}
             className={`px-4 py-3 font-bold text-sm transition-all border-b-2 relative ${
               tab === "usuarios"
@@ -87,7 +104,7 @@ function DashboardAgenteContent() {
         </div>
 
         {/* Tab Content */}
-        {tab === "tickets" && (
+        {(tab === "tickets" || tab === "historial") && (
           <>
             <section className="flex-shrink-0 mb-4 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden w-full pb-2">
               <DashboardFilters 
@@ -96,7 +113,7 @@ function DashboardAgenteContent() {
               />
             </section>
 
-            <section className="flex-1 overflow-hidden rounded-2xl shadow-xl border border-black/10 dark:border-white/10 bg-card dark:bg-background/50 backdrop-blur-sm relative flex flex-col min-h-[400px]">
+            <section className="flex-1 overflow-hidden rounded-2xl shadow-sm border border-black/10 dark:border-white/10 bg-card dark:bg-background/50 backdrop-blur-sm relative flex flex-col min-h-[400px]">
               <TicketTable 
                 tickets={ticketsFiltrados}
                 actualizandoId={actualizandoId}
