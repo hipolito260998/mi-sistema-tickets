@@ -68,7 +68,11 @@ export default function UpdatePassword() {
       setLoading(false);
     } else {
       toast.success("Contraseña actualizada con éxito.");
-      router.push("/dashboard");
+      // Usamos window.location.href en lugar de router.push para forzar un Hard Reload
+      // y que el Navbar (Server Component) detecte las nuevas cookies de sesión.
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 800);
     }
   };
 
